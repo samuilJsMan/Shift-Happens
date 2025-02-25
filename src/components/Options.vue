@@ -1,0 +1,13 @@
+<template>
+  <div style="color: white;">
+    Options
+  </div>
+</template>
+
+<script setup lang="ts">
+
+</script>
+
+<style scoped lang="scss">
+
+</style>
