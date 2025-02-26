@@ -2,18 +2,18 @@ import { defineStore } from "pinia";
 import {ref,watch,reactive} from "vue"
 export const useStore = defineStore("store", () => {
   const currentWord=ref(``)
-  const hitBlast=ref(false)
-  const currentScreen=ref(`StartMenu`)//StartMenu,FreeRoom
-  const screenLog:any=[]
+  const currentScreen=ref(`StartMenu`)
+  const currentRoom=ref(`FreeRoom`)
   const isStarted=ref(false)
-  const deviceAsist=ref(false)//true
-  const fightAsist=ref(true)//true
+  const deviceAsist=ref(true)
+  const fightAsist=ref(true)
   const yourTurn=ref(true)
-  const select=ref(1)
-  const currentRoom=ref(`FreeRoom`)//FreeRoom
-  const language=ref(`en`)
   const isAlive=ref(false)
   const godMode=ref(false)
+  const select=ref(1)
+  const difficulty=ref(1)
+  const screenLog:any=[]
+  const language=ref(`en`)
   const shopGoods:any=reactive([])
   const drugStoreGoods:any=reactive([])
   const chestEntries:any=reactive([])
@@ -30,7 +30,7 @@ export const useStore = defineStore("store", () => {
     energy:ref(3),
     energyMax:ref(3),
     gold:ref(0),
-    reloads:ref(3),
+    reloads:ref(1),
     damage:ref(10)
   }
   const shopArray:any=reactive([
@@ -142,414 +142,7 @@ export const useStore = defineStore("store", () => {
       price:25
     }
   ])
-
-  function returnCurrentWord(){return currentWord}
-  function returnHitBlast(){return hitBlast}
-  function returnCurrenScreen(){return currentScreen}
-  function returnIsStarted(){return isStarted}
-  function returnDeviceAsist(){return deviceAsist}
-  function returnFightAsist(){return fightAsist}
-  function returnYourTurn(){return yourTurn}
-  function returnInventory(){return inventory}
-  function returnStats(){return stats}
-  function returnSelect(){return select}
-  function returnDoors(){return doors}
-  function returnCurrentRoom(){return currentRoom}
-  function returnIsAlive(){return isAlive}
-  function returnLanguage(){return language}
-  function returnEnemies(){return enemies}
-  function returnChestEntries(){return chestEntries}
-  function returnSlots(){return slots}
-  function returnShopGoods(){return shopGoods}
-  function returnDrugStoreGoods(){return drugStoreGoods}
-  function returnCardsArray(){return cardsArray}
-  function returnList(){return list}
-  function toLastRoute(){currentScreen.value=screenLog.pop()}
-  function saveToLog(){screenLog.push(currentScreen.value)}
-  function jerkingSelect(data:any){
-    if(select.value==data){
-      select.value=666
-    }
-    setTimeout(()=>{select.value=data})
-  }
-  function Nulling(mod?:any){
-    if(!mod){
-      currentScreen.value=`FreeRoom`
-      currentRoom.value=`FreeRoom`
-    }
-    stats.health.value=100
-    stats.healthMax.value=100
-    stats.healthRegen.value=5
-    stats.energy.value=3
-    stats.energyMax.value=3
-    stats.gold.value=0
-    stats.reloads.value=3
-    stats.damage.value=10
-    inventory.cards.length=0
-    inventory.items.length=0
-    slots.length=0
-    doors.door2=`Battle`
-    doors.door1=`Battle`
-    doors.door3=`Battle`
-    enemies.length=0
-    yourTurn.value=true
-    list.length=0
-    fullfillChest()
-  }
-  function getSome(what:string){
-    if(what===`letter`){
-      if(language.value===`en`){
-        return `abcdefghijklmnopqrstuvwxyz`[Math.floor(Math.random()*26)]
-      }else{
-        return `йцукенгшщзхїфівапролджєячсмитьбю`[Math.floor(Math.random()*31)]
-      }
-    }else if(what===`effect`){
-      const rnd=[1,1,1,1,1,1,1,1,1,2,2,2][Math.floor(Math.random()*12)]
-      const value=[]
-      for(let i=0;i<rnd;i++){
-        const p:any={type:['fire','crit','stun','heal','energy','splash','weakness',"miss"][Math.floor(Math.random()*8)]}
-        if(p.type===value[0]?.type||p.type===value[1]?.type){continue}
-        if(p.type===`fire`){
-          p.damage=10+Math.ceil(Math.random()*20)
-          p.duration=(Math.ceil(Math.random()*3))
-        }else if(p.type===`crit`){
-          p.amplification=20+Math.ceil(Math.random()*30)
-        }else if(p.type===`stun`){
-          p.duration=1+Math.ceil(Math.random()*2)
-        }else if(p.type===`heal`){
-          p.heal=20+Math.ceil(Math.random()*30)
-        }else if(p.type===`energy`){
-          p.energy=Math.ceil(Math.random()*2)
-        }else if(p.type===`splash`){
-          p.splash=20+Math.ceil(Math.random()*30)
-        }else if(p.type===`weakness`){
-          p.duration=(Math.ceil(Math.random()*3))
-          p.weakness=20+Math.ceil(Math.random()*30)
-        }else if(p.type===`miss`){
-          p.duration=(Math.ceil(Math.random()*3))
-          p.miss=20+Math.ceil(Math.random()*30)
-        }
-        value.push(p)
-      }
-
-      const c:any={type:['-weakness','-energy','-miss'][Math.floor(Math.random()*9)]}
-
-      if(c.type){
-        if(c.type===`-weakness`){
-          c.damage= -(10+Math.ceil(Math.random()*20))
-        }else if(c.type===`-energy`){
-          c.energy= -1
-        }else if(c.type===`-miss`){
-          c.miss= (15+Math.ceil(Math.random()*15))
-        }
-      value.push(c)
-    }
-    return value
-  }
-  }
-  function fullfillShopGoods(){
-    shopGoods.length=0
-    let amount=2+Math.ceil(Math.random()*3)
-    shopArray.sort(()=>Math.random()-Math.random())
-    while(amount>0){
-      const good=JSON.parse(JSON.stringify(shopArray[amount]))
-      good.amount=ref(Math.ceil(Math.random()*5))
-      shopGoods.push(good)
-      amount--
-    }
-  }
-  function fullfillChest(){
-    chestEntries.length=0
-    // let random=[1,2,2,2,2,2,2,3,3,3,4][Math.floor(Math.random()*11)]
-    let random=9
-    while(random>0){
-      chestEntries.push(cardsArray[Math.floor(Math.random()*cardsArray.length)])
-      random--
-    }
-  }
-  function fullfillDrugStoreGoods(){
-    drugStoreGoods.length=0
-    let amount=2+Math.ceil(Math.random()*3)
-    drugStoreArray.sort(()=>Math.random()-Math.random())
-    while(amount>0){
-      const good=JSON.parse(JSON.stringify(drugStoreArray[amount]))
-      good.amount=ref(Math.ceil(Math.random()*5))
-      drugStoreGoods.push(good)
-      amount--
-    }
-  }
-  for(let i=0; i<1000; i++){
-    cardsArray.push({
-      effect:getSome(`effect`),
-      letter:getSome(`letter`)
-    })
-  }
-
-  watch(stats.health,()=>{
-    if(stats.health.value<=0){
-      isAlive.value=false
-      isStarted.value=false
-    }
-  })
-  watch(currentWord,()=>{
-    if(currentScreen.value===`Battle`){
-      switch(currentWord.value){
-        case `menu`:
-          saveToLog()
-          currentScreen.value=`Menu`
-        break
-        case `end turn`:
-          yourTurn.value=false
-        break
-      } 
-      // const find:any=slots.find((item:any)=>item?.name===currentWord.value)
-      // if(yourTurn.value&&find&&stats.energy.value>0){
-      //   find.amount--
-      //   switch(find.name){
-      //     case `grenade`:
-      //       stats.energy.value--
-      //       break
-      //     case `molotov`:
-      //       stats.energy.value--
-      //       break
-      //     case `flash`:
-      //       stats.energy.value--
-      //       break
-      //     case `smoke`:
-      //       stats.energy.value--
-      //       break
-      //     case `gas`:
-      //       stats.energy.value--
-      //       break
-      //     case `medkit`:
-      //       stats.health.value=stats.health.value+find.heal>stats.healthMax.value?stats.healthMax.value:stats.health.value+find.heal
-      //       break
-      //     case `heal potion`:
-      //       stats.health.value=stats.health.value+find.heal>stats.healthMax.value?stats.healthMax.value:stats.health.value+find.heal
-      //       break
-      //     case `energy drink`:
-      //       stats.energy.value=stats.energy.value+find.heal>stats.energyMax.value?stats.energyMax.value:stats.energy.value+find.energy
-      //       break
-      //     case `energy potion`:
-      //       stats.energy.value=stats.energy.value+find.heal>stats.energyMax.value?stats.energyMax.value:stats.energy.value+find.energy
-      //       break
-      //   }
-      // }
-    }else if(currentScreen.value===`Menu`){
-      switch(currentWord.value){
-        case `continue`:
-          toLastRoute()
-        break
-        case `restart`:
-          Nulling(true)
-        break 
-        case `tutorial`:
-          saveToLog()
-          currentScreen.value=`Tutorial`
-        break
-        case `options`:
-          saveToLog()
-          currentScreen.value=`Options`
-        break
-        case `main menu`:
-          isStarted.value=false 
-          currentScreen.value=`StartMenu`
-        break
-        case `exit`:
-          window.close()
-        break
-      }
-    }else if(currentScreen.value===`Inventory`){
-      switch(currentWord.value){
-        case `close`:
-          currentScreen.value=`FreeRoom`
-        break
-      }
-    }else if(currentScreen.value===`Help`){
-      switch(currentWord.value){
-        case `close`:
-          toLastRoute()
-        break
-      }
-    }else if(currentScreen.value===`Death`){
-      switch(currentWord.value){
-        case `restart`:
-          Nulling()
-          isStarted.value=true
-          isAlive.value=true
-        break 
-        case `exit`:
-          Nulling()
-          currentScreen.value=`StartMenu`
-        break 
-      }
-    }else if(currentScreen.value===`Chest`){
-      switch(currentWord.value){
-        case `close`:
-          currentScreen.value=`FreeRoom`
-        break
-      }
-    }else if(currentScreen.value===`Shop`){
-      switch(currentWord.value){
-        case `close`:
-          currentScreen.value=`FreeRoom`
-        break
-      }
-    }else if(currentScreen.value===`DrugStore`){
-      switch(currentWord.value){
-        case `close`:
-          currentScreen.value=`FreeRoom`
-        break
-      }
-    }else if(currentScreen.value===`FreeRoom`){
-      switch(currentWord.value){
-        case `menu`:
-          saveToLog()
-          currentScreen.value=`Menu`
-        break
-        case `inventory`:
-          currentScreen.value=`Inventory`
-        break
-      }
-      if(currentRoom.value===`DrugStore`){
-        switch(currentWord.value){
-          case `drugstore`:
-            saveToLog()
-          break
-        }
-      }else if(currentRoom.value===`Shop`){
-        switch(currentWord.value){
-          case `shop`:
-            saveToLog()
-          break
-        }
-      }else if(currentRoom.value===`Chest`){
-        switch(currentWord.value){
-          case `chest`:
-            saveToLog()
-          break
-        }
-      }
-    }else if(currentScreen.value===`StartMenu`){
-      switch(currentWord.value){
-        case `start`:
-          Nulling()
-          isStarted.value=true
-          isAlive.value=true
-        break
-        case `tutorial`:
-          saveToLog()
-          currentScreen.value=`Tutorial`
-        break 
-        case `options`:
-          saveToLog()
-          currentScreen.value=`Options`
-        break
-        case `credits`: 
-          currentScreen.value=`Credits`
-        break
-        case `kickstarter`:
-          console.log(`kickstarter link`)
-        break 
-        case `exit`:
-          window.close()
-        break
-      }
-    }else if(currentScreen.value===`Credits`){
-      switch(currentWord.value){
-        case `close`:
-          currentScreen.value=`StartMenu`
-        break
-      }
-    }else if(currentScreen.value===`Options`){
-      switch(currentWord.value){
-        case `close`:
-          toLastRoute()
-        break
-      }
-    }else if(currentScreen.value===`Tutorial`){
-      switch(currentWord.value){
-        case `close`:
-          toLastRoute()
-        break
-      }
-    }
-    if(currentWord.value===`/help`){
-      saveToLog()
-      currentScreen.value=`Help`
-    }
-    if(currentWord.value===`/data`&&godMode.value){
-      console.clear()
-      console.log(`doors `,doors)
-      console.log(`stats `,stats)
-      console.log(`inventory `,inventory)
-      console.log(`currentScreen `,currentScreen.value)
-      console.log(`currentRoom `,currentRoom.value)
-      console.log(`isAlive`,isAlive.value)
-      console.log(`isStarted`,isStarted.value)
-      console.log(`select`,select.value)
-      console.log(`enemies`,enemies)
-      console.log(`chest`,chestEntries)
-      console.log(`slots`,slots)
-    }
-    if(currentWord.value===`/kill`&&godMode.value){
-      isAlive.value=false
-      stats.health.value=0
-    }
-    if(currentWord.value===`/win`&&currentScreen.value===`Battle`&&godMode.value){
-      currentScreen.value=`FreeRoom`
-      currentRoom.value=`FreeRoom`
-      enemies.forEach((i:any)=>{
-        i.health=0
-      })
-    }
-    if(currentWord.value===`/hit`&&godMode.value){
-      console.log(`hit`)
-      hitBlast.value=true
-      setTimeout(()=>{hitBlast.value=false},50)
-    }
-    if(currentWord.value===`/way`&&godMode.value){
-       doors.door1=`Shop`
-       doors.door2=`DrugStore`
-       doors.door3=`Battle`
-    }
-    if(currentWord.value===`/godmode`){
-      godMode.value=!godMode.value
-      stats.healthMax.value=9999
-      stats.health.value=9999
-      stats.gold.value=99999999999
-      stats.energyMax.value=99
-      stats.energy.value=99
-      stats.reloads.value=99
-      console.log(`God Mode`,godMode.value)
-    }
-  })
-  watch(language,()=>{
-    cardsArray.forEach((i:any)=>{
-      i.letter=getSome(`letter`)
-    }) 
-  })
-  watch(inventory,()=>{
-    const find:any=inventory.items.find((item:any)=>item.amount===0)
-    if(find&&find.amount===0){
-      inventory.items.splice(inventory.items.indexOf(find as never),1)  
-      slots.splice(slots.indexOf(find as never),1) 
-    }
-  })
-  watch(enemies,()=>{
-    const find=enemies.find((enemy:any)=>{
-      return enemy.health>0
-    })
-    if(!find){
-      currentScreen.value=`FreeRoom`
-      currentRoom.value=`FreeRoom`
-      stats.reloads.value++
-    }
-  })
-  watch(yourTurn,()=>{
-    
-  })
-  const wordLists={
+  const wordLists:any={
     en:[
       "that",
       "this",
@@ -14616,11 +14209,486 @@ export const useStore = defineStore("store", () => {
       "рекреаційний"
     ]
   }
+  
+  function returnCurrentWord(){return currentWord}
+  function returnCurrenScreen(){return currentScreen}
+  function returnIsStarted(){return isStarted}
+  function returnDeviceAsist(){return deviceAsist}
+  function returnFightAsist(){return fightAsist}
+  function returnYourTurn(){return yourTurn}
+  function returnInventory(){return inventory}
+  function returnStats(){return stats}
+  function returnSelect(){return select}
+  function returnDoors(){return doors}
+  function returnCurrentRoom(){return currentRoom}
+  function returnIsAlive(){return isAlive}
+  function returnLanguage(){return language}
+  function returnEnemies(){return enemies}
+  function returnChestEntries(){return chestEntries}
+  function returnSlots(){return slots}
+  function returnShopGoods(){return shopGoods}
+  function returnDrugStoreGoods(){return drugStoreGoods}
+  function returnCardsArray(){return cardsArray}
+  function returnList(){return list}
+  function returnDifficulty(){return difficulty}
+  function toLastRoute(){currentScreen.value=screenLog.pop()}
+  function saveToLog(){screenLog.push(currentScreen.value)}
+  function jerkingSelect(data:any){
+    if(select.value==data){
+      select.value=666
+    }
+    setTimeout(()=>{select.value=data})
+  }
+  function Nulling(mod?:any){
+    if(!mod){
+      currentScreen.value=`FreeRoom`
+      currentRoom.value=`FreeRoom`
+    }
+    stats.health.value=100
+    stats.healthMax.value=100
+    stats.healthRegen.value=5
+    stats.energy.value=3
+    stats.energyMax.value=3
+    stats.gold.value=0
+    stats.reloads.value=3
+    stats.damage.value=10
+    inventory.cards.length=0
+    inventory.items.length=0
+    slots.length=0
+    doors.door2=`Battle`
+    doors.door1=`Battle`
+    doors.door3=`Battle`
+    enemies.length=0
+    yourTurn.value=true
+    list.length=0
+    godMode.value=false
+    fullfillChest()
+  }
+  function getSome(what:string){
+    if(what===`letter`){
+      if(language.value===`en`){
+        return `abcdefghijklmnopqrstuvwxyz`[Math.floor(Math.random()*26)]
+      }else{
+        return `йцукенгшщзхїфівапролджєячсмитьбю`[Math.floor(Math.random()*31)]
+      }
+    }else if(what===`effect`){
+      const rnd=[1,1,1,1,1,1,1,1,1,2,2,2][Math.floor(Math.random()*12)]
+      const value=[]
+      for(let i=0;i<rnd;i++){
+        const p:any={type:['fire','crit','stun','heal','energy','splash','weakness',"miss"][Math.floor(Math.random()*8)]}
+        if(p.type===value[0]?.type||p.type===value[1]?.type){continue}
+        if(p.type===`fire`){
+          p.damage=10+Math.ceil(Math.random()*20)
+          p.duration=(Math.ceil(Math.random()*3))
+        }else if(p.type===`crit`){
+          p.amplification=20+Math.ceil(Math.random()*30)
+        }else if(p.type===`stun`){
+          p.duration=1+Math.ceil(Math.random()*2)
+        }else if(p.type===`heal`){
+          p.heal=20+Math.ceil(Math.random()*30)
+        }else if(p.type===`energy`){
+          p.energy=Math.ceil(Math.random()*2)
+        }else if(p.type===`splash`){
+          p.splash=20+Math.ceil(Math.random()*30)
+        }else if(p.type===`weakness`){
+          p.duration=(Math.ceil(Math.random()*3))
+          p.weakness=20+Math.ceil(Math.random()*30)
+        }else if(p.type===`miss`){
+          p.duration=(Math.ceil(Math.random()*3))
+          p.miss=20+Math.ceil(Math.random()*30)
+        }
+        value.push(p)
+      }
+
+      const c:any={type:['-weakness','-energy','-miss'][Math.floor(Math.random()*9)]}
+
+      if(c.type){
+        if(c.type===`-weakness`){
+          c.damage= -(10+Math.ceil(Math.random()*20))
+        }else if(c.type===`-energy`){
+          c.energy= -1
+        }else if(c.type===`-miss`){
+          c.miss= (15+Math.ceil(Math.random()*15))
+        }
+      value.push(c)
+    }
+    return value
+  }
+  }
+  function fullfillShopGoods(){
+    shopGoods.length=0
+    let amount=2+Math.ceil(Math.random()*2)
+    shopArray.sort(()=>Math.random()-Math.random())
+    while(amount>0){
+      const good=JSON.parse(JSON.stringify(shopArray[amount]))
+      good.amount=ref(1+Math.ceil(Math.random()*2))
+      shopGoods.push(good)
+      amount--
+    }
+  }
+  function fullfillChest(){
+    chestEntries.length=0
+    let random=[1,2,1,1,1,1,1,1,2,1,3][Math.floor(Math.random()*11)]
+    while(random>0){
+      chestEntries.push(cardsArray[Math.floor(Math.random()*cardsArray.length)])
+      random--
+    }
+  }
+  function fullfillDrugStoreGoods(){
+    drugStoreGoods.length=0
+    let amount=2+Math.ceil(Math.random()*2)
+    drugStoreArray.sort(()=>Math.random()-Math.random())
+    while(amount>0){
+      const good=JSON.parse(JSON.stringify(drugStoreArray[amount]))
+      good.amount=ref(1+Math.ceil(Math.random()*2))
+      drugStoreGoods.push(good)
+      amount--
+    }
+  }
+  for(let i=0; i<1000; i++){
+    cardsArray.push({
+      effect:getSome(`effect`),
+      letter:getSome(`letter`)
+    })
+  }
+
+  watch(stats.health,()=>{
+    if(stats.health.value<=0){
+      isAlive.value=false
+      isStarted.value=false
+    }
+  })
+  watch(currentWord,()=>{
+    if(currentScreen.value===`Battle`){
+      switch(currentWord.value){
+        case `menu`:
+          saveToLog()
+          currentScreen.value=`Menu`
+        break
+        case `end turn`:
+          yourTurn.value=false
+        break
+        case `reload`:
+          if(stats.reloads.value>0){
+            list.length=0
+            stats.reloads.value--
+          }
+        break
+      } 
+    }else if(currentScreen.value===`Menu`){
+      switch(currentWord.value){
+        case `continue`:
+          toLastRoute()
+        break
+        case `restart`:
+          Nulling(true)
+        break 
+        case `tutorial`:
+          saveToLog()
+          currentScreen.value=`Tutorial`
+        break
+        case `options`:
+          saveToLog()
+          currentScreen.value=`Options`
+        break
+        case `main menu`:
+          isStarted.value=false 
+          currentScreen.value=`StartMenu`
+        break
+        case `exit`:
+          window.close()
+        break
+      }
+    }else if(currentScreen.value===`Inventory`){
+      switch(currentWord.value){
+        case `close`:
+          currentScreen.value=`FreeRoom`
+        break
+      }
+    }else if(currentScreen.value===`Help`){
+      switch(currentWord.value){
+        case `close`:
+          toLastRoute()
+        break
+      }
+    }else if(currentScreen.value===`Death`){
+      switch(currentWord.value){
+        case `restart`:
+          Nulling()
+          isStarted.value=true
+          isAlive.value=true
+        break 
+        case `exit`:
+          Nulling()
+          currentScreen.value=`StartMenu`
+        break 
+      }
+    }else if(currentScreen.value===`Chest`){
+      switch(currentWord.value){
+        case `close`:
+          currentScreen.value=`FreeRoom`
+        break
+        case `pick`:
+        if(chestEntries[select.value-1]){
+          inventory.cards.push(chestEntries[select.value-1] as never)
+          chestEntries.splice(select.value-1,1)
+        }
+        break
+      }
+    }else if(currentScreen.value===`Shop`){
+      switch(currentWord.value){
+        case `close`:
+          currentScreen.value=`FreeRoom`
+        break
+        case "buy":
+        const good=shopGoods[select.value-1]
+        if(good&&stats.gold.value>=good.price&&good.amount>0){
+          good.amount--
+          stats.gold.value-=good.price
+          const find:any=inventory.items.find((i:any)=>i.name===good.name)
+          if(find){
+            find.amount++
+          }else{
+            inventory.items.push(Object.assign({},good,{amount:1}) as never)
+          }
+        }
+        break
+      }
+    }else if(currentScreen.value===`DrugStore`){
+      switch(currentWord.value){
+        case `close`:
+          currentScreen.value=`FreeRoom`
+        break
+        case "buy":
+        const good=drugStoreGoods[select.value-1]
+        if(good&&stats.gold.value>=good.price&&good.amount>0){
+          good.amount--
+          stats.gold.value-=good.price
+          switch(good.name){
+            case `heal 20%`:
+              stats.health.value+=(stats.healthMax.value*0.2)
+              if(stats.health.value>stats.healthMax.value){
+                stats.health.value=stats.healthMax.value
+              }
+            break
+            case `heal 50%`:
+              stats.health.value+=(stats.healthMax.value*0.5)
+              if(stats.health.value>stats.healthMax.value){
+                stats.health.value=stats.healthMax.value
+              }
+            break
+            case `heal full`:
+              stats.health.value=stats.healthMax.value
+            break
+            case `increase health 10`:
+              stats.healthMax.value+=10
+              stats.health.value+=10
+            break
+            case `increase health 25`:
+              stats.healthMax.value+=25
+              stats.health.value+=25
+            break
+            case `increase health 50`:
+              stats.healthMax.value+=50
+              stats.health.value+=50
+            break
+            case `increase energy 1`:
+              stats.energyMax.value+=1
+              stats.energy.value+=1
+            break
+            case `increase energy 2`:
+              stats.energyMax.value+=2
+              stats.energy.value+=2
+            break
+            case `increase energy 5`:
+              stats.energyMax.value+=5
+              stats.energy.value+=5
+            break
+            case `increase regen 2`:
+              stats.healthRegen.value+=2
+            break
+            case `increase regen 5`:
+              stats.healthRegen.value+=5
+            break
+            case `increase regen 10`:
+              stats.healthRegen.value+=10
+            break
+            case `increase damage 2`:
+              stats.damage.value+=2
+            break
+            case `increase damage 5`:
+              stats.damage.value+=5
+            break
+            case `increase damage 10`:
+              stats.damage.value+=10
+            break
+            
+          }
+        }
+      break
+      }
+    }else if(currentScreen.value===`FreeRoom`){
+      switch(currentWord.value){
+        case `menu`:
+          saveToLog()
+          currentScreen.value=`Menu`
+        break
+        case `inventory`:
+          currentScreen.value=`Inventory`
+        break
+      }
+      if(currentRoom.value===`DrugStore`){
+        switch(currentWord.value){
+          case `drugstore`:
+            saveToLog()
+          break
+        }
+      }else if(currentRoom.value===`Shop`){
+        switch(currentWord.value){
+          case `shop`:
+            saveToLog()
+          break
+        }
+      }else if(currentRoom.value===`Chest`){
+        switch(currentWord.value){
+          case `chest`:
+            saveToLog()
+          break
+        }
+      }
+    }else if(currentScreen.value===`StartMenu`){
+      switch(currentWord.value){
+        case `start`:
+          Nulling()
+          isStarted.value=true
+          isAlive.value=true
+        break
+        case `tutorial`:
+          saveToLog()
+          currentScreen.value=`Tutorial`
+        break 
+        case `options`:
+          saveToLog()
+          currentScreen.value=`Options`
+        break
+        case `credits`: 
+          currentScreen.value=`Credits`
+        break
+        case `kickstarter`:
+          console.log(`kickstarter link`)
+        break 
+        case `exit`:
+          window.close()
+        break
+      }
+    }else if(currentScreen.value===`Credits`){
+      switch(currentWord.value){
+        case `close`:
+          currentScreen.value=`StartMenu`
+        break
+      }
+    }else if(currentScreen.value===`Options`){
+      switch(currentWord.value){
+        case `close`:
+          toLastRoute()
+        break
+      }
+    }else if(currentScreen.value===`Tutorial`){
+      switch(currentWord.value){
+        case `close`:
+          toLastRoute()
+        break
+      }
+    }
+    if(currentWord.value===`/help`){
+      saveToLog()
+      currentScreen.value=`Help`
+    }
+    if(currentWord.value===`/data`&&godMode.value){
+      console.clear()
+      console.log(`doors `,doors)
+      console.log(`stats `,stats)
+      console.log(`inventory `,inventory)
+      console.log(`currentScreen `,currentScreen.value)
+      console.log(`currentRoom `,currentRoom.value)
+      console.log(`isAlive`,isAlive.value)
+      console.log(`isStarted`,isStarted.value)
+      console.log(`select`,select.value)
+      console.log(`enemies`,enemies)
+      console.log(`chest`,chestEntries)
+      console.log(`slots`,slots)
+    }
+    if(currentWord.value===`/kill`&&godMode.value){
+      isAlive.value=false
+      stats.health.value=0
+    }
+    if(currentWord.value===`/win`&&currentScreen.value===`Battle`&&godMode.value){
+      enemies.forEach((i:any)=>i.health=0)
+    }
+    if(currentWord.value===`/way`&&godMode.value){
+       doors.door1=`Shop`
+       doors.door2=`DrugStore`
+       doors.door3=`Battle`
+    }
+    if(currentWord.value===`/godmode`){
+      godMode.value=!godMode.value
+      stats.healthMax.value=9999
+      stats.health.value=9999
+      stats.gold.value=99999999999
+      stats.energyMax.value=99
+      stats.energy.value=99
+      stats.reloads.value=99
+      console.log(`God Mode`,godMode.value)
+    }
+  })
+  watch(language,()=>{
+    cardsArray.forEach((i:any)=>{
+      i.letter=getSome(`letter`)
+    }) 
+  })
+  watch(inventory,()=>{
+    const find:any=inventory.items.find((item:any)=>item.amount===0)
+    if(find&&find.amount===0){
+      inventory.items.splice(inventory.items.indexOf(find as never),1)  
+      slots.splice(slots.indexOf(find as never),1) 
+    }
+  })
+  watch(enemies,()=>{
+    const find=enemies.find((enemy:any)=>{
+      return enemy.health>0
+    })
+    if(!find){
+      currentScreen.value=`FreeRoom`
+      currentRoom.value=`FreeRoom`
+      stats.reloads.value++
+      stats.health.value=stats.health.value+stats.healthRegen.value>stats.healthMax.value?stats.healthMax.value:stats.health.value+stats.healthRegen.value
+      stats.energy.value=stats.energyMax.value
+      stats.gold.value+=difficulty.value*enemies.length*5
+    }
+  })
+  watch(isAlive,()=>{
+    if(isAlive.value===false){
+      currentScreen.value=`Death`
+    }
+  })
+  watch(isStarted,()=>{
+    list.splice(0, list.length)
+  })
+  watch(list,()=>{
+    fightAsist.value=false
+    setTimeout(()=>{
+    fightAsist.value=true
+    },500)
+    while(list.length<7){
+      const randomString=Math.floor(Math.random()*wordLists[language.value].length)
+      if(list.includes(wordLists[language.value][randomString]))continue
+      list.push(wordLists[language.value][randomString])
+    }
+  })
 
   return {
     returnLanguage,
     returnCurrentWord,
-    returnHitBlast,
     returnCurrenScreen,
     returnIsStarted,
     returnDeviceAsist,
@@ -14643,6 +14711,7 @@ export const useStore = defineStore("store", () => {
     returnChestEntries,
     returnSlots,
     returnList,
+    returnDifficulty,
     wordLists,
   };
 });

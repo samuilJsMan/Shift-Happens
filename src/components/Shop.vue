@@ -37,48 +37,21 @@
 <script setup lang="ts">
 import {inject,watch,ref}from "vue"
 const store:any=inject(`store`)
-const currentWord=store.returnCurrentWord()
-const currentScreen=store.returnCurrenScreen()
 const layout=ref()
 const select=store.returnSelect()
 const shopGoods=store.returnShopGoods()
-const inventory=store.returnInventory()
-const stats=store.returnStats()
 const images:any=inject(`images`)
 
 function getImage(name:string){
   const fullName=name.split(``).filter((i)=>i!==` `&&i!==`%`).join(``)
   return images[`/src/assets/icons/${fullName}.png`].default
 }
-watch(currentWord,()=>{
-  if(currentScreen.value===`Shop`){
-    switch(currentWord.value){
-      case "buy":
-        const good=shopGoods[select.value-1]
-        if(good&&stats.gold.value>=good.price&&good.amount>0){
-          good.amount--
-          stats.gold.value-=good.price
-          const find=inventory.items.find((i:any)=>i.name===good.name)
-          if(find){
-            find.amount++
-          }else{
-            inventory.items.push(Object.assign({},good,{amount:1}))
-          }
-        }
-      break
-    }
-  }
-})
 
 watch(select,()=>{
-  if(select.value==666){return}
-  nullInventorySelect();
+  if(select.value==666){return};
+  [...layout.value.children].forEach(i=>i.style.background=`rgba(255,255,255,0.2)`);
   [...layout.value.children][select.value-1].style.background=`rgba(35, 148, 41,0.7)`
 })
-
-function nullInventorySelect(){
-  [...layout.value.children].forEach(i=>i.style.background=`rgba(255,255,255,0.2)`)
-}
 
 </script>
 

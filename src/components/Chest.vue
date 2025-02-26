@@ -37,35 +37,17 @@
 <script setup lang="ts">
 import {inject,watch,ref}from "vue"
 const store:any=inject(`store`)
-const currentWord=store.returnCurrentWord()
-const currentScreen=store.returnCurrenScreen()
 const layout=ref()
 const select=store.returnSelect()
 const chestEntries=store.returnChestEntries()
-const inventory=store.returnInventory()
 const images:any=inject(`images`)
-watch(currentWord,()=>{
-  if(currentScreen.value===`Chest`){
-    switch(currentWord.value){
-      case `pick`:
-        if(chestEntries[select.value-1]){
-          inventory.cards.push(chestEntries[select.value-1])
-          chestEntries.splice(select.value-1,1)
-        }
-      break
-    }
-  }
-})
 
 watch(select,()=>{
-  if(select.value==666){return}
-  nullInventorySelect();
+  if(select.value==666){return};
+  [...layout.value.children].forEach(i=>i.style.background=`rgba(255,255,255,0.2)`);
   [...layout.value.children][select.value-1].style.background=`rgba(35, 148, 41,0.7)`
 })
 
-function nullInventorySelect(){
-  [...layout.value.children].forEach(i=>i.style.background=`rgba(255,255,255,0.2)`)
-}
 function getImage(name:string){
   if(typeof name !==`string`)return
   let fullName=name.split(``).filter((i)=>i!==` `&&i!==`%`).join(``)

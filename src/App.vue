@@ -16,10 +16,10 @@ import TheRoom from "./components/TheRoom.vue";
 import TheUI from "./components/TheUI.vue";
 import WrongDevice from "./components/WrongDevice.vue";
 const store=useStore()
-const display=useDisplay()
-const images:any=import.meta.glob('/src/assets/icons/*', {eager:true})
-provide(`display`,display)
 provide(`store`,store)
+const display=useDisplay()
+provide(`display`,display)
+const images:any=import.meta.glob('/src/assets/icons/*', {eager:true})
 provide(`images`,images)
 const word=ref(``)
 const wrongDevice=ref(false)
@@ -29,36 +29,7 @@ const yourTurn=store.returnYourTurn()
 const enemies=store.returnEnemies()
 const select=store.returnSelect()
 const currentScreen=store.returnCurrenScreen()
-
 let deviceShowTimer:any
-
-function keyPress(event:any){
-  if((event.keyCode>=65 && event.keyCode<=90)||
-  event.keyCode===32||
-  event.key.toLowerCase()===`х`||
-  event.key.toLowerCase()===`ж`||
-  event.key.toLowerCase()===`є`||
-  event.key.toLowerCase()===`ї`||
-  event.key.toLowerCase()===`б`||
-  event.key.toLowerCase()===`ю`||
-  event.key===`/`||
-  event.key==="`"){
-    word.value+=event.key
-  }else if(event.key===`Enter`){
-    const wordConst=word.value.toLowerCase().trim()
-    if(currentScreen.value===`Battle`&&!yourTurn.value&&!(wordConst[0]===`/`||wordConst===`menu`||wordConst===`меню`||enemies[select.value-1][`health`]<=0)){
-      word.value=``
-      return
-    }
-    currentWord.value=wordConst
-    word.value=``
-  }else if(event.key===`Backspace`){
-    word.value=word.value.slice(0,-1)
-  }else if(!isNaN(event.key)&&event.key!=0){
-    store.jerkingSelect(event.key)
-  }
-  setTimeout(()=>{currentWord.value=``},100)
-}
 
 function deviceMesage(){
   wrongDevice.value=true
@@ -69,7 +40,36 @@ function deviceMesage(){
 }
 
 onMounted(()=>{
-  document.addEventListener(`keydown`,keyPress)
+  document.addEventListener(`keydown`,
+    function(event:any){
+      if((event.keyCode>=65 && event.keyCode<=90)||
+      event.keyCode===32||
+      event.key.toLowerCase()===`х`||
+      event.key.toLowerCase()===`ж`||
+      event.key.toLowerCase()===`є`||
+      event.key.toLowerCase()===`ї`||
+      event.key.toLowerCase()===`б`||
+      event.key.toLowerCase()===`ю`||
+      event.key===`/`||
+      event.key==="`"){
+        word.value+=event.key
+      }else if(event.key===`Enter`){
+        const wordConst=word.value.toLowerCase().trim()
+        if(currentScreen.value===`Battle`&&!yourTurn.value&&
+        !(wordConst[0]===`/`||wordConst===`menu`||wordConst===`меню`||enemies[select.value-1][`health`]<=0)){
+          word.value=``
+          return
+        }
+        currentWord.value=wordConst
+        word.value=``
+      }else if(event.key===`Backspace`){
+        word.value=word.value.slice(0,-1)
+      }else if(!isNaN(event.key)&&event.key!=0){
+        store.jerkingSelect(event.key)
+      }
+      setTimeout(()=>{currentWord.value=``},100)
+    }
+  )
 })
 </script>
 

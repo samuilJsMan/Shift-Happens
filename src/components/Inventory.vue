@@ -69,13 +69,9 @@ const currentSide=ref(`items`)
 const slots=store.returnSlots()
 const images:any=inject(`images`)
 
-function getImage(name:string){
-  if(typeof name !==`string`)return
-  let fullName=name.split(``).filter((i)=>i!==` `&&i!==`%`).join(``)
-  if(fullName===`-miss`){fullName=`miss`}
-  if(fullName===`-weakness`){fullName=`weakness`}
-  return images[`/src/assets/icons/${fullName}.png`].default
-}
+onMounted(()=>{
+  maxPages.value=Math.ceil(inventory.items.length/9)||1
+})
 
 watch(currentWord,()=>{
   if(currentScreen.value===`Inventory`){
@@ -115,7 +111,7 @@ watch(currentWord,()=>{
         currentSide.value=`cards`
         break  
        case `slot`:
-        if(currentSide.value===`items`) {
+        if(currentSide.value===`items`&&inventory.items[(page.value-1)*9+(select.value-1)]) {
           if(slots.find((i:any)=>i.name===inventory.items[(page.value-1)*9+(select.value-1)].name))return
           if(slots.length>=2)slots.pop()
           slots.unshift(inventory.items[(page.value-1)*9+(select.value-1)])
@@ -146,10 +142,13 @@ function nullInventorySelect(){
   if(cards){[...cards.children[0].children].forEach(i=>i.style.background=`rgba(255,255,255,0.2)`)}
 }
 
-onMounted(()=>{
-  maxPages.value=Math.ceil(inventory.items.length/9)||1
-})
-
+function getImage(name:string){
+  if(typeof name !==`string`)return
+  let fullName=name.split(``).filter((i)=>i!==` `&&i!==`%`).join(``)
+  if(fullName===`-miss`){fullName=`miss`}
+  if(fullName===`-weakness`){fullName=`weakness`}
+  return images[`/src/assets/icons/${fullName}.png`].default
+}
 </script>
 
 <style scoped lang="scss">

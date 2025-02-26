@@ -37,98 +37,17 @@
 <script setup lang="ts">
 import {inject,watch,ref}from "vue"
 const store:any=inject(`store`)
-const currentWord=store.returnCurrentWord()
-const currentScreen=store.returnCurrenScreen()
 const layout=ref()
 const select=store.returnSelect()
 const drugStoreGoods=store.returnDrugStoreGoods()
 const images:any=inject(`images`)
-const stats=store.returnStats()
-
-watch(currentWord,()=>{
-  if(currentScreen.value===`DrugStore`){
-    switch(currentWord.value){
-      case "buy":
-        const good=drugStoreGoods[select.value-1]
-        if(good&&stats.gold.value>=good.price&&good.amount>0){
-          good.amount--
-          stats.gold.value-=good.price
-          console.log(good)
-          switch(good.name){
-            case `heal 20%`:
-              stats.health.value+=(stats.healthMax.value*0.2)
-              if(stats.health.value>stats.healthMax.value){
-                stats.health.value=stats.healthMax.value
-              }
-            break
-            case `heal 50%`:
-              stats.health.value+=(stats.healthMax.value*0.5)
-              if(stats.health.value>stats.healthMax.value){
-                stats.health.value=stats.healthMax.value
-              }
-            break
-            case `heal full`:
-              stats.health.value=stats.healthMax.value
-            break
-            case `increase health 10`:
-              stats.healthMax.value+=10
-              stats.health.value+=10
-            break
-            case `increase health 25`:
-              stats.healthMax.value+=25
-              stats.health.value+=25
-            break
-            case `increase health 50`:
-              stats.healthMax.value+=50
-              stats.health.value+=50
-            break
-            case `increase energy 1`:
-              stats.energyMax.value+=1
-              stats.energy.value+=1
-            break
-            case `increase energy 2`:
-              stats.energyMax.value+=2
-              stats.energy.value+=2
-            break
-            case `increase energy 5`:
-              stats.energyMax.value+=5
-              stats.energy.value+=5
-            break
-            case `increase regen 2`:
-              stats.healthRegen.value+=2
-            break
-            case `increase regen 5`:
-              stats.healthRegen.value+=5
-            break
-            case `increase regen 10`:
-              stats.healthRegen.value+=10
-            break
-            case `increase damage 2`:
-              stats.damage.value+=2
-            break
-            case `increase damage 5`:
-              stats.damage.value+=5
-            break
-            case `increase damage 10`:
-              stats.damage.value+=10
-            break
-            
-          }
-        }
-      break
-    }
-  }
-})
 
 watch(select,()=>{
-  if(select.value==666){return}
-  nullInventorySelect();
+  if(select.value==666){return};
+  [...layout.value.children].forEach(i=>i.style.background=`rgba(255,255,255,0.2)`);
   [...layout.value.children][select.value-1].style.background=`rgba(35, 148, 41,0.7)`
 })
 
-function nullInventorySelect(){
-  [...layout.value.children].forEach(i=>i.style.background=`rgba(255,255,255,0.2)`)
-}
 function getImage(name:string){
   if(typeof name !==`string`)return
   const fullName=name.split(``).filter((i)=>i!==` `&&i!==`%`).join(``)
