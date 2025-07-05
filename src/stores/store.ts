@@ -1,29 +1,145 @@
 import { defineStore } from "pinia";
 import {ref,watch,reactive} from "vue"
+import { useI18n } from "vue-i18n";
+
+import type { Ref, Reactive } from "vue";
+
 export const useStore = defineStore("store", () => {
-  const currentWord=ref(``)
-  const currentScreen=ref(`StartMenu`)
-  const currentRoom=ref(`FreeRoom`)
-  const isStarted=ref(false)
-  const deviceAsist=ref(true)
-  const fightAsist=ref(true)
-  const yourTurn=ref(true)
-  const isAlive=ref(false)
-  const godMode=ref(false)
-  const select=ref(1)
-  const difficulty=ref(1)
-  const screenLog:any=[]
-  const language=ref(`en`)
-  const shopGoods:any=reactive([])
-  const drugStoreGoods:any=reactive([])
-  const chestEntries:any=reactive([])
-  const enemies=reactive([])
-  const slots=reactive([])
-  const cardsArray:any=reactive([])
-  const doors=reactive({door2:`Battle`,door1:`Battle`,door3:`Battle`})
-  const inventory=reactive({items:reactive([]),cards:reactive([])})
-  const list=reactive([`placeholder`])
-  const stats={
+  console.log("v5.07.22:42")
+  type TCurrentScreen=""|"Battle"|"Menu"|"Help"|"StartMenu"|"Options"|"Inventory"|"FreeRoom"|"Death"|"Chest"|"Shop"|"DrugStore"|"Intro"|"ForbiddenDevice"
+  type TDoors=Reactive<{
+    door2:"Battle"|"FreeRoom"|"DrugStore"|"Shop",
+    door1:"Battle"|"FreeRoom"|"DrugStore"|"Shop",
+    door3:"Battle"|"FreeRoom"|"DrugStore"|"Shop"
+  }>
+
+  type TShopItem={
+    name:"grenade"|"molotov"|"flash"|"smoke"|"gas"|"medkit"|"heal potion"|"energy drink"|"energy potion",
+    price:number,
+    damage?:number,
+    effect?:{type:"fire"|"stun"|"miss"|"weakness", duration:number, damage?:number, miss?:number, weakness?:number},
+    heal?:number,
+    energy?:number,
+    amount:number
+  }
+
+  type TShopArray=Reactive<Array<TShopItem>>
+
+  type TDrugStoreArray=Reactive<Array<{
+    name:"heal 20%"|"heal 50%"|"heal full"|"increase health 10"|"increase health 25"|"increase health 50"|"increase energy 1"|"increase energy 2"|"increase energy 5"|"increase regen 2"|"increase regen 5"|"increase regen 10"|"increase damage 2"|"increase damage 5"|"increase damage 10",
+    price:number,
+    amount?:number
+  }>>
+  type TCardsEffectsArray=Array<{
+    type:"fire",
+    damage:number,
+    duration:number
+    }|{
+    type:"crit",
+    amplification:number,
+    }|{
+    type:"stun",
+    duration:number
+    }|{
+    type:"heal",
+    heal:number
+    }|{
+    type:"energy",
+    energy:number
+    }|{
+    type:"splash",
+    splash:number
+    }|{
+    type:"weakness",
+    duration:number,
+    weakness:number
+    }|{
+    type:"miss",
+    duration:number,
+    miss:number
+    }|{
+    type:"-weakness", 
+    damage:number
+    }|{
+    type:"-energy",
+    energy:number
+    }|{
+    type:"-miss",
+    miss:number
+    }
+  >
+  type TCardsArray=Reactive<Array<{
+    effect:TCardsEffectsArray,
+    letter:string,
+  }>>
+
+  type TEnemyEffects=Array<{
+    type:"fire",
+    damage:number,
+    duration:number
+    }|{
+    type:"stun",
+    duration:number
+    }|{
+    type:"weakness",
+    duration:number,
+    weakness:number
+    }|{
+    type:"miss",
+    duration:number,
+    miss:number
+    }
+  >
+
+  type TEffecstNames='fire'|'crit'|'stun'|'heal'|'energy'|'splash'|'weakness'|"miss"|'-weakness'|'-energy'|'-miss'
+
+  type TProtoEffect = Partial<TCardsEffectsArray[number]> & { type: TEffecstNames };
+
+  type TEnemies=Reactive<Array<{
+    health:Ref<number>,
+    damage:Ref<number>,
+    effects:TEnemyEffects,
+  }>>
+  type TInventory=Reactive<{
+    items:Reactive<Array<TShopItem>>,
+    cards:TCardsArray
+  }>
+  type TStats={
+    health:Ref<number>,
+    healthMax:Ref<number>,
+    healthRegen:Ref<number>,
+    energy:Ref<number>,
+    energyMax:Ref<number>,
+    gold:Ref<number>,
+    reloads:Ref<number>,
+    damage:Ref<number>
+  }
+
+  const i18n=useI18n({ useScope: "global" })
+  const currentWord:Ref<string>=ref(``)
+  const currentScreen:Ref<TCurrentScreen>=ref(``)
+  const currentRoom:Ref<"FreeRoom"|"DrugStore"|"Shop"|"Battle">=ref(`FreeRoom`)
+  const isStarted:Ref<boolean>=ref(false)
+  const deviceAsist:Ref<boolean>=ref(true)
+  const fightAsist:Ref<boolean>=ref(true)
+  const navigationAsist:Ref<boolean>=ref(true)
+  const yourTurn:Ref<boolean>=ref(true)
+  const isAlive:Ref<boolean>=ref(false)
+  const godMode:Ref<boolean>=ref(false)
+  const select:Ref<number>=ref(1)
+  const difficulty:Ref<number>=ref(1)
+  const screenLog:Array<TCurrentScreen>=[]
+  const language:Ref<"en"|"ua">=ref(`en`)
+  const shopGoods:TShopArray=reactive([])
+  const drugStoreGoods:TDrugStoreArray=reactive([])
+  const cardsArray:TCardsArray=reactive([])
+  const chestEntries:TCardsArray=reactive([])
+  const enemies:TEnemies=reactive([])
+  const slots:TShopArray=reactive([])
+  const doors:TDoors=reactive({door2:`Battle`,door1:`Battle`,door3:`Battle`})
+  const inventory:TInventory=reactive({items:reactive([]),cards:reactive([])})
+  const list:Array<string>=reactive([`placeholder`])
+  const stats:TStats={
     health:ref(100),
     healthMax:ref(100),
     healthRegen:ref(5),
@@ -33,7 +149,7 @@ export const useStore = defineStore("store", () => {
     reloads:ref(1),
     damage:ref(10)
   }
-  const shopArray:any=reactive([
+  const shopArray:Reactive<Array<Omit<TShopItem, "amount">>>=reactive([
     {
       name:"grenade",
       damage:30,
@@ -56,7 +172,7 @@ export const useStore = defineStore("store", () => {
     },
     {
       name:"gas",
-      effect:{type:`weakness`,duration:2, wekness:33},
+      effect:{type:`weakness`,duration:2, weakness:33},
       price:20
     },
     {
@@ -80,7 +196,7 @@ export const useStore = defineStore("store", () => {
       price:20
     },
   ])
-  const drugStoreArray:any=reactive([
+  const drugStoreArray:TDrugStoreArray=reactive([
     {
       name:`heal 20%`,
       price:10
@@ -142,7 +258,7 @@ export const useStore = defineStore("store", () => {
       price:25
     }
   ])
-  const wordLists:any={
+  const wordLists:{en:Array<string>,ua:Array<string>}={
     en:[
       "that",
       "this",
@@ -14215,6 +14331,7 @@ export const useStore = defineStore("store", () => {
   function returnIsStarted(){return isStarted}
   function returnDeviceAsist(){return deviceAsist}
   function returnFightAsist(){return fightAsist}
+  function returnNavigationAsist(){return navigationAsist}
   function returnYourTurn(){return yourTurn}
   function returnInventory(){return inventory}
   function returnStats(){return stats}
@@ -14223,7 +14340,7 @@ export const useStore = defineStore("store", () => {
   function returnCurrentRoom(){return currentRoom}
   function returnIsAlive(){return isAlive}
   function returnLanguage(){return language}
-  function returnEnemies(){return enemies}
+  function returnEnemies():TEnemies{return enemies}
   function returnChestEntries(){return chestEntries}
   function returnSlots(){return slots}
   function returnShopGoods(){return shopGoods}
@@ -14231,7 +14348,7 @@ export const useStore = defineStore("store", () => {
   function returnCardsArray(){return cardsArray}
   function returnList(){return list}
   function returnDifficulty(){return difficulty}
-  function toLastRoute(){currentScreen.value=screenLog.pop()}
+  function toLastRoute(){currentScreen.value=screenLog.pop()||""}
   function saveToLog(){screenLog.push(currentScreen.value)}
   function jerkingSelect(data:any){
     if(select.value==data){
@@ -14264,18 +14381,12 @@ export const useStore = defineStore("store", () => {
     godMode.value=false
     fullfillChest()
   }
-  function getSome(what:string){
-    if(what===`letter`){
-      if(language.value===`en`){
-        return `abcdefghijklmnopqrstuvwxyz`[Math.floor(Math.random()*26)]
-      }else{
-        return `йцукенгшщзхїфівапролджєячсмитьбю`[Math.floor(Math.random()*31)]
-      }
-    }else if(what===`effect`){
-      const rnd=[1,1,1,1,1,1,1,1,1,2,2,2][Math.floor(Math.random()*12)]
-      const value=[]
+
+  function getEffect():TCardsEffectsArray{
+    const rnd=[1,1,1,1,1,1,1,1,1,2,2,2][Math.floor(Math.random()*12)]
+      const value:TCardsEffectsArray=[]
       for(let i=0;i<rnd;i++){
-        const p:any={type:['fire','crit','stun','heal','energy','splash','weakness',"miss"][Math.floor(Math.random()*8)]}
+        const p:TProtoEffect={type:(['fire','crit','stun','heal','energy','splash','weakness',"miss"][Math.floor(Math.random()*8)] as TEffecstNames) }
         if(p.type===value[0]?.type||p.type===value[1]?.type){continue}
         if(p.type===`fire`){
           p.damage=10+Math.ceil(Math.random()*20)
@@ -14297,10 +14408,10 @@ export const useStore = defineStore("store", () => {
           p.duration=(Math.ceil(Math.random()*3))
           p.miss=20+Math.ceil(Math.random()*30)
         }
-        value.push(p)
+        value.push(p as TCardsEffectsArray[number])
       }
 
-      const c:any={type:['-weakness','-energy','-miss'][Math.floor(Math.random()*9)]}
+      const c:TProtoEffect={type:['-weakness','-energy','-miss'][Math.floor(Math.random()*9)] as TEffecstNames}
 
       if(c.type){
         if(c.type===`-weakness`){
@@ -14310,10 +14421,16 @@ export const useStore = defineStore("store", () => {
         }else if(c.type===`-miss`){
           c.miss= (15+Math.ceil(Math.random()*15))
         }
-      value.push(c)
+      value.push(c as TCardsEffectsArray[number])
     }
     return value
-  }
+  } 
+  function getLetter():string{
+    if(language.value===`en`){
+      return `abcdefghijklmnopqrstuvwxyz`[Math.floor(Math.random()*26)]
+    }else{
+      return `йцукенгшщзхїфівапролджєячсмитьбю`[Math.floor(Math.random()*31)] 
+    }
   }
   function fullfillShopGoods(){
     shopGoods.length=0
@@ -14347,8 +14464,8 @@ export const useStore = defineStore("store", () => {
   }
   for(let i=0; i<1000; i++){
     cardsArray.push({
-      effect:getSome(`effect`),
-      letter:getSome(`letter`)
+      effect:getEffect(),
+      letter:getLetter()
     })
   }
 
@@ -14361,13 +14478,16 @@ export const useStore = defineStore("store", () => {
   watch(currentWord,()=>{
     if(currentScreen.value===`Battle`){
       switch(currentWord.value){
+        case `меню`:
         case `menu`:
           saveToLog()
           currentScreen.value=`Menu`
         break
+        case `кінець ходу`:
         case `end turn`:
           yourTurn.value=false
         break
+        case `перезарядка`:
         case `reload`:
           if(stats.reloads.value>0){
             list.length=0
@@ -14377,72 +14497,88 @@ export const useStore = defineStore("store", () => {
       } 
     }else if(currentScreen.value===`Menu`){
       switch(currentWord.value){
+        case `продовжити`:
         case `continue`:
           toLastRoute()
         break
+        case `перезапуск`:
         case `restart`:
           Nulling(true)
         break 
-        case `tutorial`:
+        case `допомога`:
+        case `help`:
           saveToLog()
-          currentScreen.value=`Tutorial`
+          currentScreen.value=`Help`
         break
-        case `options`:
-          saveToLog()
-          currentScreen.value=`Options`
-        break
+        case `головне меню`:
         case `main menu`:
           isStarted.value=false 
           currentScreen.value=`StartMenu`
         break
-        case `exit`:
-          window.close()
+        // case `вийти`:
+        // case `exit`:
+        //   window.close()
+        // break
+        case `опції`:
+        case `options`:
+          saveToLog()
+          currentScreen.value=`Options`
         break
+        
       }
     }else if(currentScreen.value===`Inventory`){
       switch(currentWord.value){
+        case `закрити`:
         case `close`:
           currentScreen.value=`FreeRoom`
         break
       }
     }else if(currentScreen.value===`Help`){
       switch(currentWord.value){
+        case `закрити`:
         case `close`:
           toLastRoute()
         break
       }
     }else if(currentScreen.value===`Death`){
       switch(currentWord.value){
+        case `перезапуск`:
         case `restart`:
           Nulling()
           isStarted.value=true
           isAlive.value=true
         break 
-        case `exit`:
+        case `головне меню`:
+        case `main menu`:
           Nulling()
           currentScreen.value=`StartMenu`
         break 
+        
       }
     }else if(currentScreen.value===`Chest`){
       switch(currentWord.value){
+        case `закрити`:
         case `close`:
           currentScreen.value=`FreeRoom`
         break
+        case `взяти`:
         case `pick`:
-        if(chestEntries[select.value-1]){
-          inventory.cards.push(chestEntries[select.value-1] as never)
-          chestEntries.splice(select.value-1,1)
-        }
+          if(chestEntries[select.value-1]){
+            inventory.cards.push(chestEntries[select.value-1] as never)
+            chestEntries.splice(select.value-1,1)
+          }
         break
       }
     }else if(currentScreen.value===`Shop`){
       switch(currentWord.value){
+        case `закрити`:
         case `close`:
           currentScreen.value=`FreeRoom`
         break
+        case "купити":
         case "buy":
         const good=shopGoods[select.value-1]
-        if(good&&stats.gold.value>=good.price&&good.amount>0){
+        if(good&&stats.gold.value>=good.price&&good.amount&&good.amount>0){
           good.amount--
           stats.gold.value-=good.price
           const find:any=inventory.items.find((i:any)=>i.name===good.name)
@@ -14456,12 +14592,14 @@ export const useStore = defineStore("store", () => {
       }
     }else if(currentScreen.value===`DrugStore`){
       switch(currentWord.value){
+        case `закрити`:
         case `close`:
           currentScreen.value=`FreeRoom`
         break
+        case "купити":
         case "buy":
         const good=drugStoreGoods[select.value-1]
-        if(good&&stats.gold.value>=good.price&&good.amount>0){
+        if(good&&stats.gold.value>=good.price&&good.amount&&good.amount>0){
           good.amount--
           stats.gold.value-=good.price
           switch(good.name){
@@ -14529,78 +14667,82 @@ export const useStore = defineStore("store", () => {
       }
     }else if(currentScreen.value===`FreeRoom`){
       switch(currentWord.value){
+        case `меню`:
         case `menu`:
           saveToLog()
           currentScreen.value=`Menu`
         break
+        case `інвентар`:
         case `inventory`:
           currentScreen.value=`Inventory`
         break
       }
-      if(currentRoom.value===`DrugStore`){
-        switch(currentWord.value){
-          case `drugstore`:
-            saveToLog()
-          break
-        }
-      }else if(currentRoom.value===`Shop`){
-        switch(currentWord.value){
-          case `shop`:
-            saveToLog()
-          break
-        }
-      }else if(currentRoom.value===`Chest`){
-        switch(currentWord.value){
-          case `chest`:
-            saveToLog()
-          break
-        }
-      }
     }else if(currentScreen.value===`StartMenu`){
       switch(currentWord.value){
+        case `старт`:
         case `start`:
           Nulling()
           isStarted.value=true
           isAlive.value=true
         break
-        case `tutorial`:
+        case `допомога`:
+        case `help`:
           saveToLog()
-          currentScreen.value=`Tutorial`
+          currentScreen.value=`Help`
         break 
+        case `опції`:
         case `options`:
           saveToLog()
           currentScreen.value=`Options`
         break
-        case `credits`: 
-          currentScreen.value=`Credits`
-        break
-        case `kickstarter`:
-          console.log(`kickstarter link`)
-        break 
+        // case `credits`: 
+        //   currentScreen.value=`Credits`
+        // break
+        // case `kickstarter`:
+        //   console.log(`kickstarter link`)
+        // break 
+        case `вийти`:
         case `exit`:
           window.close()
         break
       }
-    }else if(currentScreen.value===`Credits`){
-      switch(currentWord.value){
-        case `close`:
-          currentScreen.value=`StartMenu`
-        break
-      }
     }else if(currentScreen.value===`Options`){
       switch(currentWord.value){
+        case `закрити`:
         case `close`:
           toLastRoute()
         break
-      }
-    }else if(currentScreen.value===`Tutorial`){
-      switch(currentWord.value){
-        case `close`:
-          toLastRoute()
+        case `допомога бою`:
+        case `fight assist`:
+          fightAsist.value=!fightAsist.value
+          localStorage.setItem(`fightAssist`,fightAsist.value+``)
+        break
+        case `попередження пристрою`:
+        case `device warning`:
+          deviceAsist.value=!deviceAsist.value
+          localStorage.setItem(`deviceAsist`,deviceAsist.value+``)
+        break
+        case `допомога навігації`:
+        case `navigation assist`:
+          navigationAsist.value=!navigationAsist.value
+          localStorage.setItem(`navigationAsist`,navigationAsist.value+``)
+        break
+        case `украинська`:
+        case `українська`:
+          if(isStarted.value){return}
+          language.value=`ua`
+          i18n.locale.value = 'ua';
+          localStorage.setItem(`language`,language.value+``)
+        break
+        case `english`:
+          if(isStarted.value){return}
+          language.value=`en`
+          i18n.locale.value = 'en';
+          localStorage.setItem(`language`,language.value+``)
         break
       }
     }
-    if(currentWord.value===`/help`){
+    if(currentWord.value===`/help`||currentWord.value===`/хелп`){
       saveToLog()
       currentScreen.value=`Help`
     }
@@ -14643,8 +14785,9 @@ export const useStore = defineStore("store", () => {
   })
   watch(language,()=>{
     cardsArray.forEach((i:any)=>{
-      i.letter=getSome(`letter`)
+      i.letter=getLetter()
     }) 
+    list.length=0
   })
   watch(inventory,()=>{
     const find:any=inventory.items.find((item:any)=>item.amount===0)
@@ -14657,13 +14800,14 @@ export const useStore = defineStore("store", () => {
     const find=enemies.find((enemy:any)=>{
       return enemy.health>0
     })
-    if(!find){
+    if(!find&&isAlive.value){
       currentScreen.value=`FreeRoom`
       currentRoom.value=`FreeRoom`
       stats.reloads.value++
       stats.health.value=stats.health.value+stats.healthRegen.value>stats.healthMax.value?stats.healthMax.value:stats.health.value+stats.healthRegen.value
       stats.energy.value=stats.energyMax.value
       stats.gold.value+=difficulty.value*enemies.length*5
+      difficulty.value>7?null:difficulty.value++
     }
   })
   watch(isAlive,()=>{
@@ -14675,10 +14819,12 @@ export const useStore = defineStore("store", () => {
     list.splice(0, list.length)
   })
   watch(list,()=>{
-    fightAsist.value=false
-    setTimeout(()=>{
-    fightAsist.value=true
-    },500)
+    if(currentScreen.value===`Battle`){
+      fightAsist.value=false
+      setTimeout(()=>{
+      fightAsist.value=true
+      },500)
+    }
     while(list.length<7){
       const randomString=Math.floor(Math.random()*wordLists[language.value].length)
       if(list.includes(wordLists[language.value][randomString]))continue
@@ -14694,6 +14840,7 @@ export const useStore = defineStore("store", () => {
     returnDeviceAsist,
     returnFightAsist,
     returnYourTurn,
+    returnNavigationAsist,
     returnInventory,
     returnStats,
     returnSelect,
@@ -14713,5 +14860,6 @@ export const useStore = defineStore("store", () => {
     returnList,
     returnDifficulty,
     wordLists,
+    screenLog
   };
 });

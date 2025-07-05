@@ -79,17 +79,37 @@
       </div>
     </transition>
     <transition name="menu" mode="out-in">
-      <div class="menuDarkened" v-if="componentList[currentScreen]">
+      <div class="menuDarkened" v-if="componentList[currentScreen]||currentScreen===``">
         <transition name="menu" mode="out-in">
           <component :is="componentList[currentScreen]"/>
         </transition>
       </div>
     </transition>
-    <div class="wordLine">
-      <div class="words">
-        <slot></slot>
+    <transition name="menu2">
+      <div :class="[`wordLine`,{red: !yourTurn}]" v-if="currentScreen!==`Intro`&&currentScreen!==``&&currentScreen!==`ForbiddenDevice`" >
+        <div class="words">
+          <slot></slot>
+        </div>
+        <transition name="menu2">
+          <NavigationBlock class="NaB" v-if="currentScreen===`FreeRoom`||currentScreen===`Battle`">
+            <div v-for="item in slots" v-if="currentScreen===`Battle`">
+              {{$t(`itemsCards.`+item?.name)}}
+            </div>
+            <!-- <div>{{ yourTurn }}</div> -->
+            <div v-if="currentScreen===`Battle`" >{{ $t(`assist[16]`) }}</div>
+            <div v-if="currentScreen===`Battle`" >{{ $t(`assist[17]`) }}</div>
+            <div v-if="currentScreen===`Battle`" >{{ list[0] }}</div>
+            <div v-if="currentScreen===`FreeRoom`" >{{ $t(`assist[4]`) }}</div>
+            <div v-if="currentScreen===`FreeRoom`" >{{ $t(`assist[5]`) }}</div>
+            <div v-if="currentScreen===`FreeRoom`" >{{ $t(`assist[11]`) }}</div>
+            <div v-if="currentScreen===`FreeRoom`" >{{ $t(`assist[12]`) }}</div>
+            <div v-if="currentScreen===`FreeRoom`" >{{ $t(`assist[15]`) }}</div>
+            <div v-if="currentScreen===`FreeRoom`" >{{ $t(`assist[14]`) }}</div>
+            <div >{{ $t(`assist[13]`) }}</div>
+          </NavigationBlock>
+        </transition>
       </div>
-    </div>
+    </transition>
   </div>
 </template>
 
@@ -103,28 +123,29 @@ import DrugStore from "./DrugStore.vue"
 import Help from "./Help.vue"
 import Menu from "./Menu.vue"
 import Shop from "./Shop.vue"
-import Credits from "./Credits.vue"
 import Options from "./Options.vue"
-import Tutorial from "./Tutorial.vue"
-const store:any=inject(`store`)
+import Intro from "./Intro.vue"
+import ForbiddenDevice from "./ForbiddenDevice.vue"
+import NavigationBlock from "./NavigationBlock.vue"
+import { useStore } from "../stores/store";
+const store = useStore()
 const images:any=inject(`images`)
 const currentScreen:any=store.returnCurrenScreen()
 const isStarted:any=store.returnIsStarted()
-const componentList:any={StartMenu,Inventory,Chest,Death,DrugStore,Help,Menu,Shop,Credits,Options,Tutorial}
+const componentList:any={StartMenu,Inventory,Chest,Death,DrugStore,Help,Menu,Shop,Options,Intro,ForbiddenDevice}
 const fightAsist:any=store.returnFightAsist()
 const list:any=store.returnList()
 const stats=store.returnStats()
 const slots=store.returnSlots()
 const cards=store.returnInventory().cards
+const yourTurn=store.returnYourTurn()
 
 function calcAttack(word:string){
   const exit={effect:[]}
   cards.forEach((card:any)=>{
     if(word.includes(card.letter)){
       card.effect.forEach((effect:any)=>{
-        const find=exit.effect.find((item:any)=>{
-          return item?.type===effect.type
-        })
+        const find=exit.effect.find((item:any)=>item?.type===effect.type)
         if(find){
           Object.keys(find).forEach((item:any)=>{
             if(item===`type`)return
@@ -350,7 +371,6 @@ function getImage(name:string){
     border-radius: 3px;
     border: 3px solid rgb(45, 61, 46);
     width: 400px;
-    overflow: hidden;
     padding: 10px;
     background-color: rgba(0,0,0,0.4);
     position: absolute;
@@ -363,10 +383,25 @@ function getImage(name:string){
     font-weight: bold;
     color: rgb(168, 166, 133);
     font-size: 20px;
+    transition: 0.2s;
     .words{
       margin: 0 auto;
+      white-space: nowrap;
+      overflow: hidden;
+    }
+    .NaB{
+      font-size: 16px;
+      color: black;
+      bottom: 120% !important;
+      top: unset;
+      flex-wrap: wrap;
     }
   }
+  .red{
+    background-color: rgb(116, 26, 26);
+
+  }
+  
   .menuDarkened{
     background-image: radial-gradient(rgba(0,0,0,0.3) 0%, rgba(0,0,0,0.8) 100%);
     position: absolute;
@@ -395,6 +430,17 @@ function getImage(name:string){
   }
   .menu-enter-active,.menu-leave-active{
     transition: 0.5s;
+  }
+
+  .menu2-enter-from,.menu2-leave-to{
+    opacity: 0;
+  }
+  .menu2-leave-from, .menu2-enter-to{
+    opacity: 1;
+  }
+  .menu2-enter-active,.menu2-leave-active{
+    transition-duration: 0.5s;
+    transition-delay: 0.5s;
   }
 
   .ammo-enter-from,.ammo-leave-to{

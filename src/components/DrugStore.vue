@@ -1,5 +1,6 @@
 <template>
   <div class="wrapper">
+    <Stats/>
     <div class="viewPort">
       <div class="layout" ref="layout"><div class="cell" v-for="i in 9" :key=i></div></div>
       <div class="page">
@@ -16,36 +17,45 @@
       </div>
     </div>
     <div class="description">
-      <div v-for="i in Object.keys(drugStoreGoods[select-1])" v-if="drugStoreGoods[select-1]">
-        <div v-if="typeof drugStoreGoods[select-1][i] !== `object`&&i!==`price`&&i!==`amount`">
-          {{ i+`: `+drugStoreGoods[select-1][i]}}
-        </div>
-        <div v-else v-for="item in Object.keys(drugStoreGoods[select-1][i])">
-          <div v-if="typeof drugStoreGoods[select-1][i][item] ==`object`" 
-          v-for="it in Object.keys(drugStoreGoods[select-1][i][item])">
-            {{ it+`: `+ drugStoreGoods[select-1][i][item][it]}}
+      <div class="descriptionWrapper" v-for="i in Object.keys(description)" v-if="description">
+        <div class="line" v-if="i !==`effect`"> {{ $t(`itemsCards.${i}`)+`: `+$t(`itemsCards.${description[i as keyof typeof description]}`) }}</div>
+        <!-- <div v-else class="block">
+          <div class="line">{{ i+`:` }}</div>
+          <div class="line pl" v-for="effect in Object.keys(description[i as keyof typeof description])">
+            <div>{{ $t(`itemsCards.${effect}`)+`: `+description[i as keyof typeof description][effect] }}</div>
           </div>
-          <div v-else>
-            {{ item+`: `+drugStoreGoods[select-1][i][item] }}
-          </div>
-        </div>
+        </div> -->
       </div>
     </div>
+    <NavigationBlock v-if="navigationAsist">
+      <div>1-9</div>
+      <div>{{$t(`assist[3]`)}}</div>
+    </NavigationBlock>
   </div>
 </template>
 
 <script setup lang="ts">
-import {inject,watch,ref}from "vue"
-const store:any=inject(`store`)
+import {inject,watch,ref,computed}from "vue"
+import Stats from "./Stats.vue"
+import NavigationBlock from "./NavigationBlock.vue"
+import { useStore } from "../stores/store";
+
+const store = useStore()
 const layout=ref()
 const select=store.returnSelect()
 const drugStoreGoods=store.returnDrugStoreGoods()
 const images:any=inject(`images`)
+const navigationAsist=store.returnNavigationAsist()
 
 watch(select,()=>{
   if(select.value==666){return};
   [...layout.value.children].forEach(i=>i.style.background=`rgba(255,255,255,0.2)`);
   [...layout.value.children][select.value-1].style.background=`rgba(35, 148, 41,0.7)`
+})
+
+const description=computed(()=>{
+  const {price, amount, ...duplicat} = Object.assign({}, drugStoreGoods[select.value-1])
+  return duplicat
 })
 
 function getImage(name:string){
@@ -60,7 +70,7 @@ function getImage(name:string){
   height: 50%;
   position: relative;
   background-color: rgba(0,0,0,0.7);
-  border-radius: 25px;
+  border-radius: 0 0 25px 25px ;
   display: flex;
   padding-right: 10px;
   .viewPort{
@@ -141,9 +151,21 @@ function getImage(name:string){
   .description{
     align-self: center;
     height: 95%;
-    aspect-ratio: 1/2;
+    aspect-ratio: 1.4/2;
     background-color: rgba(255,255,255,0.2);
     border-radius: 15px;
+    padding: 10px;
+    .descriptionWrapper{
+      color: rgb(207, 202, 202);
+      .line{
+        padding-bottom: 5px;
+      }
+      .block{
+        .pl{
+          padding-left: 10px;
+        }
+      }
+    }
   }
 }
 </style>
