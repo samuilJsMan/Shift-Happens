@@ -1,110 +1,161 @@
 <template>
   <main class="main" @click="deviceMesage">
-    <TheRoom></TheRoom>
+    <TheRoom/>
     <TheUI>{{ word }}</TheUI>
     <transition name="wrongDevice" mode="out-in">
-      <WrongDevice class="device" v-if="wrongDevice&&deviceAsist"></WrongDevice>
+      <WrongDevice
+        class="device"
+        v-if="
+          wrongDevice &&
+          deviceAsist &&
+          currentScreen !== `Intro` &&
+          currentScreen !== `` &&
+          currentScreen !== `ForbiddenDevice`
+        "
+      />
     </transition>
   </main>
 </template>
 
 <script setup lang="ts">
-import { provide,onMounted,ref } from "vue";
-import { useDisplay } from "vuetify";
+import { provide, onMounted, ref } from "vue";
+import { useDisplay} from "vuetify";
+import type {DisplayInstance} from "vuetify";
+import { useI18n } from "vue-i18n";
 import { useStore } from "./stores/store";
 import TheRoom from "./components/TheRoom.vue";
 import TheUI from "./components/TheUI.vue";
 import WrongDevice from "./components/WrongDevice.vue";
-const store=useStore()
-const display=useDisplay()
-const images:any=import.meta.glob('/src/assets/icons/*', {eager:true})
-provide(`display`,display)
-provide(`store`,store)
-provide(`images`,images)
-const word=ref(``)
-const wrongDevice=ref(false)
-const currentWord=store.returnCurrentWord()
-const deviceAsist=store.returnDeviceAsist()
-const yourTurn=store.returnYourTurn()
-const enemies=store.returnEnemies()
-const select=store.returnSelect()
-const currentScreen=store.returnCurrenScreen()
+type TImages={
+  [key: string]: {
+    default: string;
+  };
+}
+const store = useStore();
+const display:DisplayInstance = useDisplay();
+provide(`display`, display);
+const images:TImages= import.meta.glob("/src/assets/icons/*", { eager: true });
+console.log(typeof Object.values(images)[0])
+provide(`images`, images);
+const i18n = useI18n();
+provide(`i18n`, i18n);
+const word = ref(``);
+const wrongDevice = ref(false);
+const currentWord = store.returnCurrentWord();
+const currentScreen = store.returnCurrenScreen();
+const yourTurn = store.returnYourTurn();
+const enemies = store.returnEnemies();
+const select = store.returnSelect();
+const language = store.returnLanguage();
+const deviceAsist = store.returnDeviceAsist();
+const fightAsist = store.returnFightAsist();
+const navigationAsist = store.returnNavigationAsist();
+let deviceShowTimer: any;
 
-let deviceShowTimer:any
+function deviceMesage() {
+  wrongDevice.value = true;
+  clearTimeout(deviceShowTimer);
+  deviceShowTimer = setTimeout(() => {
+    wrongDevice.value = false;
+  }, 2000);
+}
 
-function keyPress(event:any){
-  if((event.keyCode>=65 && event.keyCode<=90)||
-  event.keyCode===32||
-  event.key.toLowerCase()===`х`||
-  event.key.toLowerCase()===`ж`||
-  event.key.toLowerCase()===`є`||
-  event.key.toLowerCase()===`ї`||
-  event.key.toLowerCase()===`б`||
-  event.key.toLowerCase()===`ю`||
-  event.key===`/`||
-  event.key==="`"){
-    word.value+=event.key
-  }else if(event.key===`Enter`){
-    const wordConst=word.value.toLowerCase().trim()
-    if(currentScreen.value===`Battle`&&!yourTurn.value&&!(wordConst[0]===`/`||wordConst===`menu`||wordConst===`меню`||enemies[select.value-1][`health`]<=0)){
-      word.value=``
-      return
-    }
-    currentWord.value=wordConst
-    word.value=``
-  }else if(event.key===`Backspace`){
-    word.value=word.value.slice(0,-1)
-  }else if(!isNaN(event.key)&&event.key!=0){
-    store.jerkingSelect(event.key)
+onMounted(() => {
+  const timeout = setTimeout(() => {
+    currentScreen.value = `Intro`;
+  }, 1800);
+  fightAsist.value =
+    localStorage.getItem(`fightAssist`) === `false` ? false : true;
+  deviceAsist.value =
+    localStorage.getItem(`deviceAsist`) === `false` ? false : true;
+  navigationAsist.value =
+    localStorage.getItem(`navigationAsist`) === `false` ? false : true;
+  if (localStorage.getItem(`language`)) {
+    language.value = localStorage.getItem(`language`) as "ua"|"en" || `en`;
+    i18n.locale.value = language.value;
   }
-  setTimeout(()=>{currentWord.value=``},100)
-}
-
-function deviceMesage(){
-  wrongDevice.value=true
-  clearTimeout(deviceShowTimer)
-  deviceShowTimer=setTimeout(()=>{
-    wrongDevice.value=false
-  },2000)
-}
-
-onMounted(()=>{
-  document.addEventListener(`keydown`,keyPress)
-})
+  document.addEventListener(`keydown`, function (event: any) {
+    if (event.key === `Enter` && currentScreen.value === `Intro`) {
+      currentScreen.value = `StartMenu`;
+      clearTimeout(timeout);
+    }
+    if (
+      (event.keyCode >= 65 && event.keyCode <= 90) ||
+      event.keyCode === 32 ||
+      event.key.toLowerCase() === `х` ||
+      event.key.toLowerCase() === `ж` ||
+      event.key.toLowerCase() === `є` ||
+      event.key.toLowerCase() === `ї` ||
+      event.key.toLowerCase() === `б` ||
+      event.key.toLowerCase() === `ю` ||
+      event.key === `/` ||
+      event.key === "`"
+    ) {
+      word.value += event.key;
+    } else if (event.key === `Enter`) {
+      const wordConst = word.value.toLowerCase().trim();
+      if (
+        currentScreen.value === `Battle` &&
+        !yourTurn.value &&
+        !(
+          wordConst[0] === `/` ||
+          wordConst === `menu` ||
+          wordConst === `меню` ||
+          enemies[select.value - 1][`health`] <= 0
+        )
+      ) {
+        word.value = ``;
+        return;
+      }
+      currentWord.value = wordConst;
+      word.value = ``;
+    } else if (event.key === `Backspace`) {
+      word.value = word.value.slice(0, -1);
+    } else if (!isNaN(event.key) && event.key != 0) {
+      store.jerkingSelect(event.key);
+    }
+    setTimeout(() => {
+      currentWord.value = ``;
+    }, 100);
+  });
+});
 </script>
 
 <style lang="scss">
-@font-face{
+@font-face {
   font-family: "Press Start 2P";
   src: url(../src/assets/fonts/PressStart2P-Regular.ttf);
 }
-*{
+* {
   font-family: "Press Start 2P", serif;
   user-select: none;
 }
-.main{
+.main {
   width: 100%;
   height: 100vh;
   position: relative;
   overflow: hidden;
   background-color: black;
-  perspective:200px;
-  .device{
-    width: 200px;
-    position: absolute;
-    top: 40px;
-    left: 50%;
-    transform: translate(-50%,0);
-  }
+  perspective: 200px;
+}
+.device {
+  width: 200px;
+  position: absolute;
+  top: 40px;
+  left: 50%;
+  transform: translate(-50%, 0);
 }
 
-.wrongDevice-enter-from,.wrongDevice-leave-to{
+.wrongDevice-enter-from,
+.wrongDevice-leave-to {
   opacity: 0;
 }
-.wrongDevice-leave-from, .wrongDevice-enter-to{
+.wrongDevice-leave-from,
+.wrongDevice-enter-to {
   opacity: 1;
 }
-.wrongDevice-enter-active,.wrongDevice-leave-active{
+.wrongDevice-enter-active,
+.wrongDevice-leave-active {
   transition: 0.5s;
 }
 </style>

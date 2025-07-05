@@ -1,5 +1,6 @@
 <template>
   <div class="wrapper">
+    <Stats/>
     <div class="viewPort">
       <div class="layout" ref="layout"><div class="cell" v-for="i in 9" :key=i></div></div>
       <div class="page">
@@ -16,56 +17,48 @@
       </div>
     </div>
     <div class="description">
-      <div v-for="i in Object.keys(chestEntries[select-1])" v-if="chestEntries[select-1]">
-        <div v-if="(typeof chestEntries[select-1][i] !== `object`)&&(i!=`letter`)">
-          {{ i+`: `+chestEntries[select-1][i].toUpperCase()}}
-        </div>
-        <div v-else v-for="item in Object.keys(chestEntries[select-1][i])">
-          <div v-if="typeof chestEntries[select-1][i][item] ==`object`" 
-          v-for="it in Object.keys(chestEntries[select-1][i][item])">
-            {{ it+`: `+ chestEntries[select-1][i][item][it]}}
-          </div>
-          <div v-else-if="i!=`letter`">
-            {{ item+`: `+chestEntries[select-1][i][item] }}
+      <div class="descriptionWrapper" v-for="i in Object.keys(description)" v-if="description">
+        <div class="line" v-if="i !==`effect`">{{ $t(`itemsCards.${i}`)+`: `+(description[i as keyof typeof description] as string).toUpperCase() }}</div>
+        <div v-else class="block" v-for="effect in description[i]">
+          <div class="line">{{ $t(`itemsCards.${i}`)+`:` }}</div>
+          <div class="line pl" v-for="item in  Object.keys(effect)">
+            <div v-if="item===`type`" >{{ $t(`itemsCards.${item}`)+`: `+$t(`itemsCards.${effect[item]}`) }}</div>
+            <div v-else >{{ $t(`itemsCards.${item}`)+`: `+effect[item as keyof typeof effect] }}</div>
           </div>
         </div>
       </div>
     </div>
+    <NavigationBlock v-if="navigationAsist">
+      <div>1-9</div>
+      <div>{{$t(`assist[1]`)}}</div>
+    </NavigationBlock>
   </div>
 </template>
 
 <script setup lang="ts">
-import {inject,watch,ref}from "vue"
-const store:any=inject(`store`)
-const currentWord=store.returnCurrentWord()
-const currentScreen=store.returnCurrenScreen()
+import {inject,watch,ref,computed}from "vue"
+import Stats from "./Stats.vue"
+import NavigationBlock from "./NavigationBlock.vue"
+import { useStore } from "../stores/store";
+const store = useStore()
+
 const layout=ref()
 const select=store.returnSelect()
 const chestEntries=store.returnChestEntries()
-const inventory=store.returnInventory()
 const images:any=inject(`images`)
-watch(currentWord,()=>{
-  if(currentScreen.value===`Chest`){
-    switch(currentWord.value){
-      case `pick`:
-        if(chestEntries[select.value-1]){
-          inventory.cards.push(chestEntries[select.value-1])
-          chestEntries.splice(select.value-1,1)
-        }
-      break
-    }
-  }
+const navigationAsist=store.returnNavigationAsist()
+
+const description=computed(()=>{
+  const duplicat=Object.assign({},chestEntries[select.value-1])
+  return duplicat
 })
 
 watch(select,()=>{
-  if(select.value==666){return}
-  nullInventorySelect();
+  if(select.value==666){return};
+  [...layout.value.children].forEach(i=>i.style.background=`rgba(255,255,255,0.2)`);
   [...layout.value.children][select.value-1].style.background=`rgba(35, 148, 41,0.7)`
 })
 
-function nullInventorySelect(){
-  [...layout.value.children].forEach(i=>i.style.background=`rgba(255,255,255,0.2)`)
-}
 function getImage(name:string){
   if(typeof name !==`string`)return
   let fullName=name.split(``).filter((i)=>i!==` `&&i!==`%`).join(``)
@@ -80,76 +73,88 @@ function getImage(name:string){
   height: 50%;
   position: relative;
   background-color: rgba(0,0,0,0.7);
-  border-radius: 25px;
+  border-radius: 0 0 25px 25px ;
   display: flex;
   padding-right: 10px;
-  .viewPort{
-    height: 100%;
+}
+.viewPort{
+  height: 100%;
+  aspect-ratio: 1/1;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transition: 0.5s;
+  .page{
+    height: 95%;
     aspect-ratio: 1/1;
-    width: 100%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    transition: 0.5s;
-    .page{
-      height: 95%;
-      aspect-ratio: 1/1;
-      border-radius: 20px;
-      display: grid;
-      grid-template-columns: 1fr 1fr 1fr;
-      grid-template-rows: 1fr 1fr 1fr;
-      gap: 5px;
-      z-index: 1;
-      .item{
+    border-radius: 20px;
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    grid-template-rows: 1fr 1fr 1fr;
+    gap: 5px;
+    z-index: 1;
+    .item{
+      display: flex;
+      flex-wrap: wrap;
+      font-size: 30px;
+      color: rgb(207, 202, 202);
+      justify-content: space-evenly;
+      align-items: start;
+      .itemWrapper{
+        width: 50%;
+        height: 50%;
         display: flex;
-        flex-wrap: wrap;
-        font-size: 30px;
-        color: rgb(207, 202, 202);
-        justify-content: space-evenly;
-        align-items: start;
-        .itemWrapper{
-          width: 50%;
-          height: 50%;
-          display: flex;
-          justify-content: center;
-          align-items: center;
-          padding: 5px;
-          filter: grayscale(0.4);
-          .background{
-            height: 100%;
-            width: 100%;
-            background-repeat: no-repeat;
-            background-size: contain;
-            background-position: 50% 50%;
-          }
-        }
-        .bad{
-          border: 2px solid rgb(221, 48, 48);
-          border-radius: 10px;
+        justify-content: center;
+        align-items: center;
+        padding: 5px;
+        filter: grayscale(0.4);
+        .background{
+          height: 100%;
+          width: 100%;
+          background-repeat: no-repeat;
+          background-size: contain;
+          background-position: 50% 50%;
         }
       }
-    }
-    .layout{
-      position: absolute;
-      height: 95%;
-      aspect-ratio: 1/1;
-      display: grid;
-      grid-template-columns: 1fr 1fr 1fr;
-      grid-template-rows: 1fr 1fr 1fr;
-      gap: 5px;
-      .cell{
-        background-color: rgba(255,255,255,0.2);
-        border-radius: 15px;
-        transition: 0.2s;
+      .bad{
+        border: 2px solid rgb(221, 48, 48);
+        border-radius: 10px;
       }
     }
   }
-  .description{
-    align-self: center;
+  .layout{
+    position: absolute;
     height: 95%;
-    aspect-ratio: 1/2;
-    background-color: rgba(255,255,255,0.2);
-    border-radius: 15px;
+    aspect-ratio: 1/1;
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    grid-template-rows: 1fr 1fr 1fr;
+    gap: 5px;
+    .cell{
+      background-color: rgba(255,255,255,0.2);
+      border-radius: 15px;
+      transition: 0.2s;
+    }
+  }
+}
+.description{
+  align-self: center;
+  height: 95%;
+  aspect-ratio: 1.4/2;
+  background-color: rgba(255,255,255,0.2);
+  border-radius: 15px;
+  padding: 10px;
+  .descriptionWrapper{
+    color: rgb(207, 202, 202);
+    .line{
+      padding-bottom: 5px;
+    }
+    .block{
+      .pl{
+        padding-left: 10px;
+      }
+    }
   }
 }
 </style>

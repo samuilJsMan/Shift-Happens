@@ -78,26 +78,43 @@
         </div>
       </div>
     </transition>
-    <transition name="hit">
-      <div class="hitBlast" v-if="hitBlast"></div>
-    </transition>
     <transition name="menu" mode="out-in">
-      <div class="menuDarkened" v-if="componentList[currentScreen]">
+      <div class="menuDarkened" v-if="componentList[currentScreen]||currentScreen===``">
         <transition name="menu" mode="out-in">
           <component :is="componentList[currentScreen]"/>
         </transition>
       </div>
     </transition>
-    <div class="wordLine">
-      <div class="words">
-        <slot></slot>
+    <transition name="menu2">
+      <div :class="[`wordLine`,{red: !yourTurn}]" v-if="currentScreen!==`Intro`&&currentScreen!==``&&currentScreen!==`ForbiddenDevice`" >
+        <div class="words">
+          <slot></slot>
+        </div>
+        <transition name="menu2">
+          <NavigationBlock class="NaB" v-if="currentScreen===`FreeRoom`||currentScreen===`Battle`">
+            <div v-for="item in slots" v-if="currentScreen===`Battle`">
+              {{$t(`itemsCards.`+item?.name)}}
+            </div>
+            <!-- <div>{{ yourTurn }}</div> -->
+            <div v-if="currentScreen===`Battle`" >{{ $t(`assist[16]`) }}</div>
+            <div v-if="currentScreen===`Battle`" >{{ $t(`assist[17]`) }}</div>
+            <div v-if="currentScreen===`Battle`" >{{ list[0] }}</div>
+            <div v-if="currentScreen===`FreeRoom`" >{{ $t(`assist[4]`) }}</div>
+            <div v-if="currentScreen===`FreeRoom`" >{{ $t(`assist[5]`) }}</div>
+            <div v-if="currentScreen===`FreeRoom`" >{{ $t(`assist[11]`) }}</div>
+            <div v-if="currentScreen===`FreeRoom`" >{{ $t(`assist[12]`) }}</div>
+            <div v-if="currentScreen===`FreeRoom`" >{{ $t(`assist[15]`) }}</div>
+            <div v-if="currentScreen===`FreeRoom`" >{{ $t(`assist[14]`) }}</div>
+            <div >{{ $t(`assist[13]`) }}</div>
+          </NavigationBlock>
+        </transition>
       </div>
-    </div>
+    </transition>
   </div>
 </template>
 
 <script setup lang="ts">
-import {inject,watch} from "vue"
+import {inject} from "vue"
 import StartMenu from "./StartMenu.vue"
 import Inventory from "./Inventory.vue"
 import Chest from "./Chest.vue"
@@ -106,183 +123,29 @@ import DrugStore from "./DrugStore.vue"
 import Help from "./Help.vue"
 import Menu from "./Menu.vue"
 import Shop from "./Shop.vue"
-import Credits from "./Credits.vue"
 import Options from "./Options.vue"
-import Tutorial from "./Tutorial.vue"
-const store:any=inject(`store`)
+import Intro from "./Intro.vue"
+import ForbiddenDevice from "./ForbiddenDevice.vue"
+import NavigationBlock from "./NavigationBlock.vue"
+import { useStore } from "../stores/store";
+const store = useStore()
 const images:any=inject(`images`)
-const hitBlast=store.returnHitBlast()
 const currentScreen:any=store.returnCurrenScreen()
 const isStarted:any=store.returnIsStarted()
-const componentList:any={StartMenu,Inventory,Chest,Death,DrugStore,Help,Menu,Shop,Credits,Options,Tutorial}
+const componentList:any={StartMenu,Inventory,Chest,Death,DrugStore,Help,Menu,Shop,Options,Intro,ForbiddenDevice}
 const fightAsist:any=store.returnFightAsist()
 const list:any=store.returnList()
-const currentWord:any=store.returnCurrentWord()
 const stats=store.returnStats()
-const yourTurn=store.returnYourTurn()
 const slots=store.returnSlots()
-const language:any=store.returnLanguage()
-const isAlive=store.returnIsAlive()
 const cards=store.returnInventory().cards
-const enemies=store.returnEnemies()
-const select=store.returnSelect()
+const yourTurn=store.returnYourTurn()
 
-watch(list,()=>{
-  fightAsist.value=false
-  setTimeout(()=>{
-  fightAsist.value=true
-  },500)
-  while(list.length<7){
-    const randomString=Math.floor(Math.random()*store.wordLists[language.value].length)
-    if(list.includes(store.wordLists[language.value][randomString]))continue
-    list.push(store.wordLists[language.value][randomString])
-  }
-})
-
-watch(isStarted,()=>{
-  list.splice(0, list.length)
-})
-
-watch(currentWord,()=>{
-
-  if(currentScreen.value===`Battle`&&yourTurn.value){
-    if(currentWord.value===`reload`&&stats.reloads.value>0&&stats.energy.value>0){
-      list.splice(0, list.length)
-      stats.energy.value--
-      stats.reloads.value--
-    }
-    if(currentWord.value===list[0]&&stats.energy.value>0){
-      list.shift()
-      stats.energy.value--
-      let calculatedAttack=calcAttack(currentWord.value).effect
-      const miss:any=calculatedAttack.find((item:any)=>item.type==="-miss")
-      const splash:any=calculatedAttack.find((item:any)=>item.type==="splash")
-      let damage=stats.damage.value
-
-      calculatedAttack.forEach((effect:any)=>{
-        switch (effect.type){
-          case `crit`:
-            damage+=Math.floor(stats.damage.value/100*effect[`amplification`])
-            delete calculatedAttack[calculatedAttack.indexOf(effect as never)]
-            break
-          case `-weakness`:
-            damage+=Math.ceil(stats.damage.value/100*effect[`damage`])
-            delete calculatedAttack[calculatedAttack.indexOf(effect as never)]
-            break
-          case `heal`:
-            if(stats.health.value+effect[`heal`]>stats.healthMax.value){
-              stats.health.value=stats.healthMax.value
-            }else{
-              stats.health.value+=effect[`heal`]
-            }
-            delete calculatedAttack[calculatedAttack.indexOf(effect as never)]
-            break
-          case `energy`:
-            stats.energy.value++
-            if(stats.energy.value+effect[`energy`]>stats.energyMax.value){
-              stats.energy.value=stats.energyMax.value
-            }else{
-              stats.energy.value+=effect[`energy`]
-            }
-            delete calculatedAttack[calculatedAttack.indexOf(effect as never)]
-            break
-          case `-energy`:
-            if(+stats.energy.value+effect[`energy`]<0){
-              stats.energy.value=0
-            }else{
-              stats.energy.value+=effect[`energy`]
-            }
-            delete calculatedAttack[calculatedAttack.indexOf(effect as never)]
-            break
-        }
-      })
-
-      if(miss){
-        if(miss.miss>Math.random()*100){return}
-        delete calculatedAttack[calculatedAttack.indexOf(miss as never)]
-      }
-
-      enemies[select.value-1].health-=damage
-
-      if(splash){
-        enemies.forEach((enemy:any)=>{
-          enemy.health-=Math.floor(damage/100*splash[`splash`])
-        })
-        calculatedAttack.splice(calculatedAttack.indexOf(splash as never),1)
-      }
-
-      calculatedAttack=calculatedAttack.filter(() => true)
-      console.log(calculatedAttack)
-      calculatedAttack.forEach((effect:any)=>setEffect(effect))
-    }
-    const find:any=slots.find((item:any)=>item?.name===currentWord.value)
-    if(yourTurn.value&&find){
-      if(find.name===`grenade`&&stats.energy.value>0){
-        stats.energy.value--
-        find.amount--
-        enemies.forEach((enemy:any)=>enemy.health-=find.damage)
-      }else if(find.name===`molotov`&&stats.energy.value>0){
-        stats.energy.value--
-        find.amount--
-        setEffect(find.effect,true)
-      }else if(find.name===`flash`&&stats.energy.value>0){
-        stats.energy.value--
-        find.amount--
-        setEffect(find.effect,true)
-      }else if(find.name===`smoke`&&stats.energy.value>0){
-        stats.energy.value--
-        find.amount--
-        setEffect(find.effect,true)
-      }else if(find.name===`gas`&&stats.energy.value>0){
-        stats.energy.value--
-        find.amount--
-        setEffect(find.effect,true)
-      }else if(find.name===`medkit`||find.name===`heal potion`){
-        stats.health.value=stats.health.value+find.heal>stats.healthMax.value?stats.healthMax.value:stats.health.value+find.heal
-        find.amount--
-      }else if(find.name===`energy drink`||find.name===`energy potion`){
-        stats.energy.value=stats.energy.value+find.heal>stats.energyMax.value?stats.energyMax.value:stats.energy.value+find.energy
-        find.amount--
-      }    
-    }
-  }
-}) 
-
-watch(isAlive,()=>{
-  if(isAlive.value===false){
-    currentScreen.value=`Death`
-  }
-})
-
-function setEffect(effect:any,global?:boolean){
-  console.log(effect)
-  function setInner(enemy:any){
-    const find=enemy.effects.find((enemyEffect:any)=>enemyEffect.type===effect.type)
-    if(find){
-      Object.keys(find).forEach((item:any)=>{
-        if(item===`type`)return
-        if(Math.abs(find[item])<Math.abs(effect[item])){
-          (find as any)[item]=effect[item]
-        }
-      })
-    }else{
-      enemy.effects.push(Object.assign({},effect))
-    }
-  }
-  if(global){
-    enemies.forEach((argument:any)=>{setInner(argument)})
-  }else{
-    setInner(enemies[select.value-1])
-  }
-}
 function calcAttack(word:string){
   const exit={effect:[]}
   cards.forEach((card:any)=>{
     if(word.includes(card.letter)){
       card.effect.forEach((effect:any)=>{
-        const find=exit.effect.find((item:any)=>{
-          return item?.type===effect.type
-        })
+        const find=exit.effect.find((item:any)=>item?.type===effect.type)
         if(find){
           Object.keys(find).forEach((item:any)=>{
             if(item===`type`)return
@@ -304,12 +167,14 @@ function calcAttack(word:string){
   })
   return exit
 }
+
 function emit(effect:any){
   const duplicat=Object.assign({},effect)
   delete duplicat.type
   delete duplicat.duration
   return Object.values(duplicat)[0]
 }
+
 function getImage(name:string){
   if(typeof name !==`string`||name===``)return
   const fullName=name.split(``).filter((i)=>i!==` `&&i!==`%`&&i!==`-`).join(``)
@@ -506,7 +371,6 @@ function getImage(name:string){
     border-radius: 3px;
     border: 3px solid rgb(45, 61, 46);
     width: 400px;
-    overflow: hidden;
     padding: 10px;
     background-color: rgba(0,0,0,0.4);
     position: absolute;
@@ -519,16 +383,25 @@ function getImage(name:string){
     font-weight: bold;
     color: rgb(168, 166, 133);
     font-size: 20px;
+    transition: 0.2s;
     .words{
       margin: 0 auto;
+      white-space: nowrap;
+      overflow: hidden;
+    }
+    .NaB{
+      font-size: 16px;
+      color: black;
+      bottom: 120% !important;
+      top: unset;
+      flex-wrap: wrap;
     }
   }
-  .hitBlast{
-    background-color: rgb(255,255,255,0.2);
-    position: absolute;
-    height: 100%;
-    width: 100%;
+  .red{
+    background-color: rgb(116, 26, 26);
+
   }
+  
   .menuDarkened{
     background-image: radial-gradient(rgba(0,0,0,0.3) 0%, rgba(0,0,0,0.8) 100%);
     position: absolute;
@@ -557,6 +430,17 @@ function getImage(name:string){
   }
   .menu-enter-active,.menu-leave-active{
     transition: 0.5s;
+  }
+
+  .menu2-enter-from,.menu2-leave-to{
+    opacity: 0;
+  }
+  .menu2-leave-from, .menu2-enter-to{
+    opacity: 1;
+  }
+  .menu2-enter-active,.menu2-leave-active{
+    transition-duration: 0.5s;
+    transition-delay: 0.5s;
   }
 
   .ammo-enter-from,.ammo-leave-to{

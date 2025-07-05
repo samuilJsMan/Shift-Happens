@@ -1,13 +1,40 @@
 <template>
   <div class="room" ref="room">
-    <div class="wall" v-for="wall in [`door1`,`door4`,`door2`,`door3`]">
+    <div class="wall">
       <div class="brick"></div>
       <div class="shadow"></div>
       <div class="doorway">
-        <div class="door" :ref="wall" :id="wall">
+        <div class="door" ref="door1" id="door1">
           <div class="after"></div>
-          <img src="../assets/drugStore.png" v-if="doors[wall]==`DrugStore`" class="image" >
-          <img src="../assets/shop.png" v-if="doors[wall]==`Shop`" class="image" >
+          <img src="../assets/drugStore.png" v-if="doors[`door1`]==`DrugStore`" class="image" >
+          <img src="../assets/shop.png" v-if="doors[`door1`]==`Shop`" class="image" >
+        </div>
+      </div> 
+    </div>
+    <div class="wall">
+      <div class="brick"></div>
+      <div class="shadow"></div>
+      <div class="doorway"></div> 
+    </div>
+    <div class="wall">
+      <div class="brick"></div>
+      <div class="shadow"></div>
+      <div class="doorway">
+        <div class="door" ref="door2" id="door2">
+          <div class="after"></div>
+          <img src="../assets/drugStore.png" v-if="doors[`door2`]==`DrugStore`" class="image" >
+          <img src="../assets/shop.png" v-if="doors[`door2`]==`Shop`" class="image" >
+        </div>
+      </div> 
+    </div>
+    <div class="wall">
+      <div class="brick"></div>
+      <div class="shadow"></div>
+      <div class="doorway">
+        <div class="door" ref="door3" id="door3">
+          <div class="after"></div>
+          <img src="../assets/drugStore.png" v-if="doors[`door3`]==`DrugStore`" class="image" >
+          <img src="../assets/shop.png" v-if="doors[`door3`]==`Shop`" class="image" >
         </div>
       </div> 
     </div>
@@ -21,7 +48,7 @@
       </div>
       <div class="enemyZone" ref="enemyZone">
         <div class="enemy" v-for="enemy in enemies">
-          <div class="mask" v-if="currentScreen===`Battle`"></div>
+          <div class="mask maskFade" v-if="currentScreen===`Battle`"></div>
           <div class="place">
             <Transition name="enemy">
               <div class="stats" v-if="enemy.health>0">
@@ -76,30 +103,45 @@
 </template>
 
 <script setup lang="ts">
-import {ref,onMounted,inject,watch,reactive} from "vue"
-const store:any=inject(`store`)
-const display:any=inject(`display`)
-const images:any=inject(`images`)
-const room=ref()
-const bulb=ref()
-const door2=ref()
-const door1=ref()
-const door3=ref()
-const doorFlat=ref()
-const fadeVisibility=ref(true)
+import {ref,onMounted,inject,watch,reactive,nextTick} from "vue"
+import type {Ref} from "vue";
+import { useStore } from "../stores/store";
+import { useDisplay} from "vuetify";
+import { useI18n } from "vue-i18n";
+import type {DisplayInstance} from "vuetify";
+type TImages={
+  [key: string]: {
+    default: string;
+  };
+}
+const store = useStore()
+const display:DisplayInstance=useDisplay()
+const images:TImages=inject(`images`) as TImages
+const i18n=useI18n()
+const room:Ref<HTMLElement|null>=ref(null)
+const bulb:Ref<HTMLElement|null>=ref(null)
+const door2:Ref<HTMLElement|null>=ref(null)
+const door1:Ref<HTMLElement|null>=ref(null)
+const door3:Ref<HTMLElement|null>=ref(null)
+const doorFlat:Ref<HTMLElement|null>=ref(null)
+const enemyZone:Ref<HTMLElement|null>=ref(null)
+const fadeVisibility:Ref<boolean>=ref(true)
 const currentWord=store.returnCurrentWord()
 const currentScreen=store.returnCurrenScreen()
 const doors=store.returnDoors()
 const currentRoom=store.returnCurrentRoom()
 const isAlive=store.returnIsAlive()
-const hitBlast=store.returnHitBlast()
-const enemies=store.returnEnemies()
+const isStarted=store.returnIsStarted()
+const enemies=store.returnEnemies();
 const stats=store.returnStats()
 const select=store.returnSelect()
-const enemyZone=ref()
-const difficulty=ref(8)
+const difficulty=store.returnDifficulty()
 const yourTurn=store.returnYourTurn()
-let nearDoor:any=false
+const list=store.returnList()
+const slots=store.returnSlots()
+const cards=store.returnInventory().cards
+let nearDoor:boolean=false
+let prevSelect:number=0
 let adjastiveRoomStyle=``
 const baseRoomStyle=`
   translate(-50%, -50%)
@@ -115,25 +157,32 @@ const baseBulbStyle=`
   translateX(-50%) 
   rotateX(180deg)
 `
-onMounted(toNull)
+
+onMounted(()=>nextTick(toNull))
   
 watch(currentWord,()=>{
+  if(!isStarted.value)return
   if(currentScreen.value===`FreeRoom`){
     switch (currentWord.value){
       case `left` : 
-        rotateLeft()
+      case `вліво` : 
+        rotateToDoor(door2.value,`rotateY(-90deg)`)
         break
       case `right` : 
-        rotateRight()
+      case `вправо` : 
+        rotateToDoor(door3.value,`rotateY(90deg)`)
         break
       case `forward` : 
-        goForward()
+      case `вперед` : 
+        rotateToDoor(door1.value,` `)
         break 
-      case `go inside` :
+      case `inside` :
+      case `увійти` :
         doorAction(nearDoor)
         break 
       case `corner`:
-        goToCorner()
+      case `кут`:
+        rotateToDoor(false,`rotateY(-45deg)`)
         if(currentRoom.value===`DrugStore`){
           currentScreen.value=`DrugStore`
         }else if(currentRoom.value===`Shop`){
@@ -141,50 +190,135 @@ watch(currentWord,()=>{
         }else{
           currentScreen.value=`Chest`
         }
-        break  
+        break 
     }
   }
   if(currentScreen.value===`Menu`){
-    if(currentWord.value===`restart`){
-      room.value.style.transform=startRoomStype
-      bulb.value.style.transform=baseBulbStyle
+    if(currentWord.value===`restart`||currentWord.value===`перезапуск`){
+      room.value?room.value.style.transform=startRoomStype:null
+      bulb.value?bulb.value.style.transform=baseBulbStyle:null
       currentScreen.value=`FreeRoom`
+    }
+  }
+  if(currentScreen.value===`Battle`&&yourTurn.value){
+    if(currentWord.value===list[0]&&stats.energy.value>0&&enemies[select.value-1].health>0){
+      list.shift()
+      stats.energy.value--
+      let calculatedAttack=calcAttack(currentWord.value).effect
+      const miss:any=calculatedAttack.find((item:any)=>item.type==="-miss")
+      const splash:any=calculatedAttack.find((item:any)=>item.type==="splash")
+      let damage=stats.damage.value
+      calculatedAttack.forEach((effect:any)=>{
+      switch (effect.type){
+        case `crit`:
+          damage+=Math.floor(stats.damage.value/100*effect[`amplification`])
+          delete calculatedAttack[calculatedAttack.indexOf(effect as never)]
+          break
+        case `-weakness`:
+          damage+=Math.ceil(stats.damage.value/100*effect[`damage`])
+          delete calculatedAttack[calculatedAttack.indexOf(effect as never)]
+          break
+        case `heal`:
+          if(stats.health.value+effect[`heal`]>stats.healthMax.value){
+            stats.health.value=stats.healthMax.value
+          }else{
+            stats.health.value+=effect[`heal`]
+          }
+          delete calculatedAttack[calculatedAttack.indexOf(effect as never)]
+          break
+        case `energy`:
+          stats.energy.value++
+          if(stats.energy.value+effect[`energy`]>stats.energyMax.value){
+            stats.energy.value=stats.energyMax.value
+          }else{
+            stats.energy.value+=effect[`energy`]
+          }
+          delete calculatedAttack[calculatedAttack.indexOf(effect as never)]
+          break
+        case `-energy`:
+          if(+stats.energy.value+effect[`energy`]<0){
+            stats.energy.value=0
+          }else{
+            stats.energy.value+=effect[`energy`]
+          }
+          delete calculatedAttack[calculatedAttack.indexOf(effect as never)]
+          break
+      }
+    })
+    if(miss){
+      if(miss.miss>Math.random()*100){return}
+      delete calculatedAttack[calculatedAttack.indexOf(miss as never)]
+    }
+    enemies[select.value-1].health-=damage
+    IAttackAnimation()
+    setTimeout(enemyHitAnimation,100)
+    if(splash){
+      enemies.forEach((enemy:any,ind:any)=>{
+        if(enemy===enemies[select.value-1]){return}
+        setTimeout(()=>{
+          enemyHitAnimation(ind+1)
+          enemy.health-=Math.floor(damage/100*splash[`splash`])
+        },200)
+      })
+      calculatedAttack.splice(calculatedAttack.indexOf(splash as never),1)
+    }
+    calculatedAttack=calculatedAttack.filter(() => true)
+    calculatedAttack.forEach((effect:any)=>setEffect(effect))
+    }
+    const find:any=slots.find((item:any)=>i18n.t(`itemsCards.`+item?.name)===currentWord.value)
+    if(find){
+      if(find.name===`grenade`&&stats.energy.value>0){
+        stats.energy.value--
+        find.amount--
+        enemies.forEach((enemy:any,ind:any)=>{
+          enemyHitAnimation(ind+1)
+          enemy.health-=find.damage
+        })
+      }else if(find.name===`molotov`&&stats.energy.value>0){
+        stats.energy.value--
+        find.amount--
+        setEffect(find.effect,true)
+      }else if(find.name===`flash`&&stats.energy.value>0){
+        stats.energy.value--
+        find.amount--
+        setEffect(find.effect,true)
+      }else if(find.name===`smoke`&&stats.energy.value>0){
+        stats.energy.value--
+        find.amount--
+        setEffect(find.effect,true)
+      }else if(find.name===`gas`&&stats.energy.value>0){
+        stats.energy.value--
+        find.amount--
+        setEffect(find.effect,true)
+      }else if(find.name===`medkit`||find.name===`heal potion`){
+        stats.health.value=stats.health.value+find.heal>stats.healthMax.value?stats.healthMax.value:stats.health.value+find.heal
+        find.amount--
+      }else if(find.name===`energy drink`||find.name===`energy potion`){
+        stats.energy.value=stats.energy.value+find.heal>stats.energyMax.value?stats.energyMax.value:stats.energy.value+find.energy
+        find.amount--
+      }
     }
   }
 })
 
 watch(currentScreen,()=>{
-  if(currentScreen.value===`StartMenu`){
+  if(currentScreen.value===`StartMenu`&&room.value){
     room.value.style.transform=startRoomStype
   }
 })
 
 watch(isAlive,()=>{
-  if(isAlive.value===false){
-    room.value.style.transform=`
-      ${startRoomStype}
-      translateX(90px)
-      translateY(50px)
-      rotateZ(90deg)
-    `
-  }else{
-    room.value.style.transform=startRoomStype
-  }
-})
-
-watch(hitBlast,()=>{
-  if(hitBlast.value===true){
-    room.value.style.transition=`0.05s `
-    room.value.style.transform=`${startRoomStype} translateX(10px)`
-    setTimeout(()=>{
-      room.value.style.transition=`0.1s `
-      room.value.style.transform=`${startRoomStype} translateX(-10px)`
-    },50)
-    setTimeout(()=>{
-      room.value.style.transition=`0.05s `
+  if(room.value){
+    if(isAlive.value===false){
+      room.value.style.transform=`
+        ${startRoomStype}
+        translateX(90px)
+        translateY(50px)
+        rotateZ(90deg)
+      `
+    }else{
       room.value.style.transform=startRoomStype
-    },150)
-    setTimeout(()=>room.value.style.transition=`1s`,300)
+    }
   }
 })
 
@@ -193,47 +327,191 @@ watch(yourTurn,()=>{
     let lenght=0
     function enemyTurn(){
       const enemy=enemies[lenght]
-      console.log(enemy)
       lenght++
-      if(!enemy){return}
+      if(!enemy){
+        yourTurn.value=true
+        stats.energy.value=stats.energyMax.value
+        stats.health.value+=stats.healthRegen.value
+        stats.health.value>stats.healthMax.value?stats.health.value=stats.healthMax.value:null
+        return
+      }
       const stun=enemy.effects.find((effect:any)=>effect.type===`stun`)
       if(enemy.health>0){
         if(!stun){
-          //attack animation
+          if(enemyZone.value){
+            enemyAttackAnimation(enemyZone.value.children[lenght-1].children[1])
+          }
           let damage=enemy.damage
           const weakness=enemy.effects.find((effect:any)=>effect.type===`weakness`)
           const miss=enemy.effects.find((effect:any)=>effect.type===`miss`)
-          if(weakness){
-            damage=damage-(damage*100/weakness.weakness)
+          if(weakness?.type==`weakness`){
+            damage=damage-(damage/100*weakness.weakness)
           }
-          if(miss&&miss.miss>Math.random()*100){
+          if(miss?.type=="miss"&&miss.miss>Math.random()*100){
             damage=0
           }
-          stats.health.value-=Math.round(damage)
-          //hit animation
+          setTimeout(()=>{
+            stats.health.value-=Math.round(damage)
+            IHitAnimation()
+          },200)
         }
         enemy.effects.forEach((effect:any)=>{
-          console.log(effect)
           if(effect.damage){
-            enemy.health-=effect.damage
+            setTimeout(()=>{
+              enemyHitAnimation(lenght)
+              enemy.health-=effect.damage
+            },400)
           }
           effect.duration--
           if(effect.duration===0){
-            enemy.effects.splice(enemy.effects.indexOf(effect),1)
+            delete enemy.effects[enemy.effects.indexOf(effect)]
           }
         })
+        enemy.effects=enemy.effects.filter(() => true)
+        if(!stun){
+          setTimeout(enemyTurn,600)
+        }else{
+          enemyTurn()
+        }
+      }else{
+        enemyTurn()
       }
-      setTimeout(enemyTurn,500)
     }
     enemyTurn()
-    yourTurn.value=true
-    stats.energy.value=stats.energyMax.value
-    stats.health.value+=stats.healthRegen.value
-    stats.health.value>stats.healthMax.value?stats.health.value=stats.healthMax.value:null
+    
   }
 })
 
 watch(select,maskSelection)
+
+function calcAttack(word:string){
+  const exit={effect:[]}
+  cards.forEach((card:any)=>{
+    if(word.includes(card.letter)){
+      card.effect.forEach((effect:any)=>{
+        const find=exit.effect.find((item:any)=>{
+          return item?.type===effect.type
+        })
+        if(find){
+          Object.keys(find).forEach((item:any)=>{
+            if(item===`type`)return
+            if((find as any).type[0]===`-`){
+              if(Math.abs(find[item])>Math.abs(effect[item])){
+                (find as any)[item]=effect[item]
+              }
+            }else{
+              if(Math.abs(find[item])<Math.abs(effect[item])){
+                (find as any)[item]=effect[item]
+              }
+            }
+          })
+        }else{
+          exit.effect.push(effect as never)
+        }
+      })
+    }
+  })
+  return exit
+}
+
+function IHitAnimation(){
+  if(room.value){
+    room.value.style.transition=`0.05s `
+    room.value.style.transform=`${startRoomStype} translateX(10px)`
+  }
+  setTimeout(()=>{
+    if(room.value){
+      room.value.style.transition=`0.1s `
+      room.value.style.transform=`${startRoomStype} translateX(-10px)`
+    }
+  },50)
+  setTimeout(()=>{
+  if(room.value){
+    room.value.style.transition=`0.05s `
+    room.value.style.transform=startRoomStype
+  }
+  },150)
+  setTimeout(()=>room.value?room.value.style.transition=`1s`:null,300)
+}
+
+function IAttackAnimation(){
+  if(room.value){
+    room.value.style.transition=`0.2s`
+    room.value.style.transform=`${startRoomStype} translateZ(10px)`
+  }
+  setTimeout(()=>{
+  if(room.value){    
+    room.value.style.transform=startRoomStype
+  }
+  },200)
+  setTimeout(()=>{
+    if(room.value){    
+      room.value.style.transition=`1s`
+    }
+  },400)
+}
+
+function enemyHitAnimation(ind?:any){
+  let enemy:HTMLElement|undefined
+  if(ind){
+    if(enemies[ind-1].health<=0){return}
+    if(enemyZone.value){
+      enemy=enemyZone.value.children[ind-1].children[1] as HTMLElement
+    }
+  }else{
+    if(enemies[select.value-1].health<=0){return}
+    if(enemyZone.value){
+      enemy=enemyZone.value.children[select.value-1].children[1] as HTMLElement
+    }
+  }
+  const base=`translate(0,-35%) rotateX(-90deg)`
+  if(enemy){
+    enemy.style.transition=`0.05s `
+    enemy.style.transform=`${base} translateX(10px)`
+  }
+    setTimeout(()=>{
+      if(enemy){
+        enemy.style.transition=`0.1s `
+        enemy.style.transform=`${base} translateX(-10px)`
+      }
+    },50)
+    setTimeout(()=>{
+      if(enemy){
+        enemy.style.transition=`0.05s `
+        enemy.style.transform=base
+      }
+    },150)
+}
+
+function enemyAttackAnimation(enemy:any){
+  const base=`translate(0,-35%) rotateX(-90deg)`
+  enemy.style.transition=`0.2s`
+  enemy.style.transform=`${base} translateZ(20px)`
+  setTimeout(()=>{
+    enemy.style.transform=base
+  },200)
+}
+
+function setEffect(effect:any,global?:boolean){
+  function setInner(enemy:any){
+    const find=enemy.effects.find((enemyEffect:any)=>enemyEffect.type===effect.type)
+    if(find){
+      Object.keys(find).forEach((item:any)=>{
+        if(item===`type`)return
+        if(Math.abs(find[item])<Math.abs(effect[item])){
+          (find as any)[item]=effect[item]
+        }
+      })
+    }else{
+      enemy.effects.push(Object.assign({},effect))
+    }
+  }
+  if(global){
+    enemies.forEach((argument:any)=>{setInner(argument)})
+  }else{
+    setInner(enemies[select.value-1])
+  }
+}
 
 function emit(effect:any){
   const duplicat=Object.assign({},effect)
@@ -250,10 +528,12 @@ function getImage(name:string){
 
 function maskSelection(){
   if(select.value===666||currentScreen.value!==`Battle`){return}
-  const children=[...enemyZone.value.children][select.value-1]
-  if(children){
-    [...enemyZone.value.children].forEach((i)=>i.children[0].classList.add(`maskFade`))
-    children.children[0].classList.remove(`maskFade`)
+  if(enemyZone.value){
+    [...enemyZone.value.children].forEach((i)=>i.children[0].classList.add(`maskFade`));
+    [...enemyZone.value.children][select.value-1].children[0].classList.remove(`maskFade`)
+    prevSelect=select.value
+  }else{
+    select.value=prevSelect
   }
 }
 
@@ -261,118 +541,113 @@ function toNull(){
   maskSelection()
   toggleTransition(`off`)
   store.jerkingSelect(1)
-  room.value.style.transform=startRoomStype
-
-  bulb.value.style.transform=baseBulbStyle
-
-  door1.value[0].style.transform=``
-  door1.value[0].children[0].style.opacity=`0`
-
-  door2.value[0].style.transform=``
-  door2.value[0].children[0].style.opacity=`0`
-
-  door3.value[0].style.transform=``
-  door3.value[0].children[0].style.opacity=`0`
+  if(room.value){
+    room.value.style.transform=startRoomStype
+  }
+  if(bulb.value){
+    bulb.value.style.transform=baseBulbStyle
+  }
+  if(door1.value){
+    door1.value.style.transform=``;
+    (door1.value.children[0] as HTMLElement).style.opacity=`0`
+  }
+  if(door2.value){
+    door2.value.style.transform=``;
+    (door2.value.children[0] as HTMLElement).style.opacity=`0`
+  }
+  if(door3.value){
+    door3.value.style.transform=``;
+    (door3.value.children[0] as HTMLElement).style.opacity=`0`
+  }
 
   setTimeout(()=>{
-    toggleTransition(`on`)
+    toggleTransition("on")
   },10)
   fadeVisibility.value=false
-  doorFlat.value.style.transform=`
-  translate(-${50+Math.round(Math.random()*20)-10}%,${50+Math.round(Math.random()*20)-10}%)
-  rotateZ(${Math.round(Math.random()*40)-20}deg)
-  `
+  if(doorFlat.value){
+    doorFlat.value.style.transform=`
+    translate(-${50+Math.round(Math.random()*20)-10}%,${50+Math.round(Math.random()*20)-10}%)
+    rotateZ(${Math.round(Math.random()*40)-20}deg)
+    `
+  }
 }
 
 function toggleTransition(mode:string){
   const doorTransition=mode===`on`?`0.3s`:`0s`
   const roomTransition=mode===`on`?`1s`:`0s`
-  if(door1.value[0]){
-    door1.value[0].style.transitionDuration=doorTransition
-    door1.value[0].children[0].style.transitionDuration=doorTransition
+  if(door1.value){
+    door1.value.style.transitionDuration=doorTransition;
+    (door1.value.children[0] as HTMLElement).style.transitionDuration=doorTransition
   }
-  if(door2.value[0]){
-    door2.value[0].style.transitionDuration=doorTransition
-    door2.value[0].children[0].style.transitionDuration=doorTransition
+  if(door2.value){
+    door2.value.style.transitionDuration=doorTransition;
+    (door2.value.children[0] as HTMLElement).style.transitionDuration=doorTransition
   }
-  if(door3.value[0]){
-    door3.value[0].style.transitionDuration=doorTransition
-    door3.value[0].children[0].style.transitionDuration=doorTransition
+  if(door3.value){
+    door3.value.style.transitionDuration=doorTransition;
+    (door3.value.children[0] as HTMLElement).style.transitionDuration=doorTransition
   }
-  bulb.value.style.transition=roomTransition
-  room.value.style.transition=roomTransition
+  if(bulb.value){
+    bulb.value.style.transition=roomTransition
+  }
+  if(room.value){
+    room.value.style.transition=roomTransition
+  }
 }
 
-function rotateRight(){
-  nearDoor=door3.value[0]
-  adjastiveRoomStyle=`rotateY(90deg)`
-  room.value.style.transform=` ${baseRoomStyle} ${adjastiveRoomStyle} `
-  bulb.value.style.transform=` ${baseBulbStyle} ${adjastiveRoomStyle} `
-}
-
-function rotateLeft(){
-  nearDoor=door2.value[0]
-  adjastiveRoomStyle=`rotateY(-90deg)`
-  room.value.style.transform=` ${baseRoomStyle} ${adjastiveRoomStyle}`
-  bulb.value.style.transform=`${baseBulbStyle} ${adjastiveRoomStyle}`
-}
-
-function goToCorner(){
-  nearDoor=false
-  adjastiveRoomStyle=`rotateY(-45deg)`
-  room.value.style.transform=` ${baseRoomStyle} ${adjastiveRoomStyle}`
-  bulb.value.style.transform=`${baseBulbStyle} ${adjastiveRoomStyle}`
-}
-
-function goForward(){
-  nearDoor=door1.value[0]
-  adjastiveRoomStyle=``
-  room.value.style.transform=baseRoomStyle
-  bulb.value.style.transform=baseBulbStyle
+function rotateToDoor(door:any, style:string){
+  nearDoor=door
+  adjastiveRoomStyle=style
+  if(room.value){
+    room.value.style.transform=` ${baseRoomStyle} ${adjastiveRoomStyle} `
+  }
+  if(bulb.value){
+    bulb.value.style.transform=` ${baseBulbStyle} ${adjastiveRoomStyle} `
+  }
 }
 
 function doorAction(door:any){
   if(nearDoor){
+    isStarted.value=false
     door.style.transform=`
       translateZ(-${10+Math.round(Math.random()*20)}px)
       rotateX(90deg)
       rotateZ(${Math.round(Math.random()*20)-10}deg)
     `
     door.children[0].style.opacity=`1`
-    const timeBeforeEnter=400
     setTimeout(()=>{
       fadeVisibility.value=true
-      room.value.style.transform=`
-        translate(-50%, -50%)
-        translateZ(400px)
-        scale(${display.width.value/400})
-        ${adjastiveRoomStyle}
-      `
-    },timeBeforeEnter)
-
-    setTimeout(()=>{
-      enemies.length=0
-      if(doors[door.id]===`Battle`){
-        let random=Math.ceil(Math.random()*difficulty.value)
-        while(random>0){
-          random--
-          const health=50+Math.ceil(Math.random()*50)
-          enemies.push({
-            health:ref(health),
-            healthMax:ref(health),
-            damage:ref(5+Math.ceil(Math.random()*5)),
-            effects:reactive([])
-          })
-        }
+      if(room.value){
+        room.value.style.transform=`
+          translate(-50%, -50%)
+          translateZ(400px)
+          scale(${display.width.value/400})
+          ${adjastiveRoomStyle}
+        `
       }
+    },400)
+
+    //go out
+    setTimeout(()=>{
+      isStarted.value=true
       toNull()
-      currentRoom.value=doors[door.id]
+      currentRoom.value=doors[(door.id as "door1"|"door2"|"door3")]
+      enemies.length=0
       if(currentRoom.value===`DrugStore`){
         store.fullfillDrugStoreGoods()
       }else if(currentRoom.value===`Shop`){
         store.fullfillShopGoods()
       }else if(currentRoom.value===`Battle`){
         currentScreen.value=currentRoom.value
+        let random=Math.ceil(Math.random()*difficulty.value)
+        while(random>0){
+          random--
+          enemies.push({
+            health:(difficulty.value*6)+Math.ceil(Math.random()*(difficulty.value*6)),
+            damage:Math.round(difficulty.value/2)+Math.ceil(Math.random()*Math.round(difficulty.value/2)),
+            effects:reactive([])
+          })
+        }
         store.fullfillChest()
       }
       doors.door2=`Battle`
@@ -380,16 +655,11 @@ function doorAction(door:any){
       doors.door3=`Battle`
       const randomNumber=Math.ceil(Math.random()*5)
       if(randomNumber===1&&currentRoom.value!==`DrugStore`){
-        doors[`door`+Math.ceil(Math.random()*3)]=`DrugStore`
+        doors[(`door`+Math.ceil(Math.random()*3) as "door1"|"door2"|"door3")]=`DrugStore`
       }else if(randomNumber===2&&currentRoom.value!==`Shop`){
-        doors[`door`+Math.ceil(Math.random()*3)]=`Shop`
-      }else{
-        difficulty.value++
-        if(difficulty.value>8){
-          difficulty.value=8
-        }
+        doors[(`door`+Math.ceil(Math.random()*3) as "door1"|"door2"|"door3")]=`Shop`
       }
-    },700+timeBeforeEnter)
+    },1100)
   }
 }
 

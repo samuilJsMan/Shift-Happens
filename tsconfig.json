@@ -5,8 +5,14 @@
     { "path": "./tsconfig.node.json" }
   ],
   "compilerOptions": {
-    "types": ["vuetify"],
+    "strict": true,
+    "types": [
+      "vite/client",
+      "vue",
+      "pinia",
+      "vuetify"
+    ],
     "module": "esnext",
-    "moduleResolution": "node",
+    "moduleResolution": "node"
   }
 }

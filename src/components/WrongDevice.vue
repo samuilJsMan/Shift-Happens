@@ -7,27 +7,27 @@
     <div class="wrong">
       <svg xmlns="http://www.w3.org/2000/svg" height="60px" viewBox="0 -960 960 960" width="60px" fill="red"><path d="m256-200-56-56 224-224-224-224 56-56 224 224 224-224 56 56-224 224 224 224-56 56-224-224-224 224Z"/></svg>
     </div>
-    <div class="help">/help</div>
+    <div class="help">{{$t(`assist[0]`)}}</div>
   </div>
 </template>
 <style lang="scss" scoped>
 .wrongDeviceWrapper{
   position: relative;
-  .right{
-    position: absolute;
-    top: 25px;
-    left: 40px;
-    color: rgb(44, 231, 19);
-  }
-  .wrong{
-    position: absolute;
-    top: 25px;
-    left: 148px;
-  }
-  .help{
-    margin-top: 10px;
-    text-align: center;
-    color: rgb(255, 228, 196);
-  }
+}
+.right{
+  position: absolute;
+  top: 25px;
+  left: 40px;
+  color: rgb(44, 231, 19);
+}
+.wrong{
+  position: absolute;
+  top: 25px;
+  left: 148px;
+}
+.help{
+  margin-top: 10px;
+  text-align: center;
+  color: rgb(255, 228, 196);
 }
 </style>

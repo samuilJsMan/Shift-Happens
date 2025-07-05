@@ -1,5 +1,6 @@
 <template>
   <div class="wrapper">
+    <Stats/>
     <div class="count">{{ page+`/`+maxPages }}</div>
     <div class="viewPort" ref="viewPort">
       <div class="items type" ref="pageItems">
@@ -34,27 +35,45 @@
       </div>
     </div>
     <div class="description">
-      <div v-for="i in Object.keys(inventory[currentSide][(page-1)*9+(select-1)])" v-if="inventory[currentSide][(page-1)*9+(select-1)]">
-        <div v-if="(typeof inventory[currentSide][(page-1)*9+(select-1)][i] !== `object`)&&(i!=`letter`)&&(i!=`price`)">
-          {{ i+`: `+inventory[currentSide][(page-1)*9+(select-1)][i]}}
-        </div>
-        <div v-else v-for="item in Object.keys(inventory[currentSide][(page-1)*9+(select-1)][i])">
-          <div v-if="typeof inventory[currentSide][(page-1)*9+(select-1)][i][item] ==`object`" 
-          v-for="it in Object.keys(inventory[currentSide][(page-1)*9+(select-1)][i][item])">
-            {{ it+`: `+ inventory[currentSide][(page-1)*9+(select-1)][i][item][it]}}
+      <div class="descriptionWrapper" v-for="i in Object.keys(description)" v-if="description&&currentSide===`items`">
+        <div class="line" v-if="i ===`heal`||i ===`energy`||i ===`damage`"> {{ $t(`itemsCards.${i}`)+`: `+ description[i]}}</div>
+        <div class="line" v-else-if="i !==`effect`"> {{ $t(`itemsCards.${i}`)+`: `+ $t(`itemsCards.${description[i as keyof typeof description]}`)}}</div>
+        <div v-else class="block">
+          <div class="line">{{ $t(`itemsCards.${i}`)+`:` }}</div>
+          <div class="line pl" v-for="effect in Object.keys(description[i] as {} )">
+            <div v-if="effect===`type`" >{{ $t(`itemsCards.${effect}`)+`: `+$t(`itemsCards.${(description[i] as any)[effect]}`) }}</div>
+            <div v-else>{{ $t(`itemsCards.${effect}`)+`: `+(description[i] as any)[effect] }}</div>
           </div>
-          <div v-else-if="(i!=`letter`)&&(i!=`price`)">
-            {{ item+`: `+inventory[currentSide][(page-1)*9+(select-1)][i][item] }}
+        </div>
+      </div>
+      <div class="descriptionWrapper" v-for="i in Object.keys(description as {})" v-else>
+        <div class="line" v-if="i !==`effect`">{{ $t(`itemsCards.${i}`)+`: `+((description as {})[i as keyof typeof description] as string).toUpperCase() }}</div>
+        <div v-else class="block" v-for="effect in (description as {})[i as keyof typeof description]">
+          <div class="line">{{ $t(`itemsCards.${i}`)+`:` }}</div>
+          <div class="line pl" v-for="item in  Object.keys(effect as {})">
+            <div v-if="item===`type`" >{{ $t(`itemsCards.${item}`)+`: `+$t(`itemsCards.${(effect as any)[item]}`) }}</div>
+            <div v-else >{{ $t(`itemsCards.${item}`)+`: `+(effect as any)[item] }}</div>
           </div>
         </div>
       </div>
     </div>
+    <NavigationBlock v-if="navigationAsist">
+      <div>1-9</div>
+      <div>{{$t(`assist[6]`)}}</div>
+      <div>{{$t(`assist[7]`)}}</div>
+      <div>{{$t(`assist[8]`)}}</div>
+      <div>{{$t(`assist[9]`)}}</div>
+      <div>{{$t(`assist[10]`)}}</div>
+    </NavigationBlock>
   </div>
 </template>
 
 <script setup lang="ts">
-import {inject,watch,ref,onMounted,reactive }from "vue"
-const store:any=inject(`store`)
+import {inject,watch,ref,onMounted,reactive,computed }from "vue"
+import Stats from "./Stats.vue"
+import NavigationBlock from "./NavigationBlock.vue"
+import { useStore } from "../stores/store";
+const store = useStore()
 const currentWord=store.returnCurrentWord()
 const currentScreen=store.returnCurrenScreen()
 const inventory=store.returnInventory()
@@ -68,18 +87,24 @@ const select=store.returnSelect()
 const currentSide=ref(`items`)
 const slots=store.returnSlots()
 const images:any=inject(`images`)
+const navigationAsist=store.returnNavigationAsist()
 
-function getImage(name:string){
-  if(typeof name !==`string`)return
-  let fullName=name.split(``).filter((i)=>i!==` `&&i!==`%`).join(``)
-  if(fullName===`-miss`){fullName=`miss`}
-  if(fullName===`-weakness`){fullName=`weakness`}
-  return images[`/src/assets/icons/${fullName}.png`].default
-}
+onMounted(()=>{
+  maxPages.value=Math.ceil(inventory.items.length/9)||1
+})
+
+const description=computed(()=>{
+  const item=inventory[currentSide.value as keyof typeof inventory][(page.value-1)*9+(select.value-1)]
+  if("amount" in item){
+    const {price, amount, ...duplicat}=Object.assign({},item)
+    return duplicat
+  }
+})
 
 watch(currentWord,()=>{
   if(currentScreen.value===`Inventory`){
     switch(currentWord.value){
+      case `вниз`:
       case `down`:
       if(page.value+1<=maxPages.value){
           nullInventorySelect()
@@ -87,6 +112,7 @@ watch(currentWord,()=>{
           transformStyles.height-=100
         }
         break
+      case `вгору`:
       case `up`:
         if(page.value>1){
           nullInventorySelect()
@@ -94,6 +120,7 @@ watch(currentWord,()=>{
           transformStyles.height+=100
         }
         break  
+      case `предмети`:
       case `items`:
         nullInventorySelect()
         page.value=1
@@ -104,6 +131,7 @@ watch(currentWord,()=>{
         pageItems.value.style.opacity=`1`
         currentSide.value=`items`
         break
+      case `карти`:
       case `cards`:
         nullInventorySelect()
         page.value=1
@@ -114,13 +142,14 @@ watch(currentWord,()=>{
         pageCards.value.style.opacity=`1`
         currentSide.value=`cards`
         break  
+       case `слот`:
        case `slot`:
-        if(currentSide.value===`items`) {
+        if(currentSide.value===`items`&&inventory.items[(page.value-1)*9+(select.value-1)]) {
           if(slots.find((i:any)=>i.name===inventory.items[(page.value-1)*9+(select.value-1)].name))return
           if(slots.length>=2)slots.pop()
           slots.unshift(inventory.items[(page.value-1)*9+(select.value-1)])
         }
-      break 
+        break 
     }
   }
 })
@@ -146,10 +175,13 @@ function nullInventorySelect(){
   if(cards){[...cards.children[0].children].forEach(i=>i.style.background=`rgba(255,255,255,0.2)`)}
 }
 
-onMounted(()=>{
-  maxPages.value=Math.ceil(inventory.items.length/9)||1
-})
-
+function getImage(name:string){
+  if(typeof name !==`string`)return
+  let fullName=name.split(``).filter((i)=>i!==` `&&i!==`%`).join(``)
+  if(fullName===`-miss`){fullName=`miss`}
+  if(fullName===`-weakness`){fullName=`weakness`}
+  return images[`/src/assets/icons/${fullName}.png`].default
+}
 </script>
 
 <style scoped lang="scss">
@@ -157,7 +189,7 @@ onMounted(()=>{
   height: 50%;
   position: relative;
   background-color: rgba(0,0,0,0.7);
-  border-radius: 25px;
+  border-radius: 0 0 25px 25px ;
   display: flex;
   padding-right: 10px;
   .count{
@@ -166,6 +198,31 @@ onMounted(()=>{
     left:-10%;
     transform: translate(0,-50%);
     color: white;
+  }
+  .stats{
+    position: absolute;
+    width: 100%;
+    bottom: 100%;
+    height: 100px;
+    background-color: rgba(0, 0, 0, 0.7);
+    border-radius: 25px 25px 0 0;
+    padding: 10px 10px 0 10px;
+    .startInner{
+      height: 100%;
+      width: 100%;
+      background-color: rgba(255, 255, 255, 0.2);
+      border-radius: 15px;
+      display: flex;
+      flex-wrap: wrap;
+      .statItem{
+        width: 50%;
+        padding: 5px 15px ;
+        display: flex;
+        justify-content: flex-start;
+        align-items: center;
+        color: rgb(207, 202, 202);
+      }
+    }
   }
   .viewPort{
     height: 100%;
@@ -271,9 +328,21 @@ onMounted(()=>{
   .description{
     align-self: center;
     height: 95%;
-    aspect-ratio: 1/2;
+    aspect-ratio: 1.4/2;
     background-color: rgba(255,255,255,0.2);
     border-radius: 15px;
+    padding: 10px;
+    .descriptionWrapper{
+      color: rgb(207, 202, 202);
+      .line{
+        padding-bottom: 5px;
+      }
+      .block{
+        .pl{
+          padding-left: 10px;
+        }
+      }
+    }
   }
 }
 </style>
