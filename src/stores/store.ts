@@ -3,7 +3,6 @@ import {ref,watch,reactive} from "vue"
 import { useI18n } from "vue-i18n";
 
 import type { Ref, Reactive } from "vue";
-import { fa } from "vuetify/locale";
 
 export const useStore = defineStore("store", () => {
   console.log("v5.07.22:42")
