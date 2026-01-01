@@ -11,9 +11,9 @@
   </div>
 </template>
 <style lang="scss" scoped>
-.wrongDeviceWrapper{
-  position: relative;
-}
+// .wrongDeviceWrapper{
+//   position: relative;
+// }
 .right{
   position: absolute;
   top: 25px;

@@ -1,5 +1,5 @@
 {
-  "menues":["Start","Help","Options","Exit","Continue","Restart","Main Menu","Fight Assist","Navigation Assist","Device Warning","You Are Dead"],
+  "menues":["Start","Help","Options","Exit","Continue","Restart","Main Menu","Fight Assist","Navigation Assist","Device Warning","You Are Dead","Save"],
   "assist":["/help","pick","close","buy","left","right","up","down","cards","items","slot","forward","inside","menu","inventory","corner","reload","end turn"],
   "itemsCards":{
     "name":"name",

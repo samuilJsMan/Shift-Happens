@@ -3,6 +3,7 @@ import {ref,watch,reactive} from "vue"
 import { useI18n } from "vue-i18n";
 
 import type { Ref, Reactive } from "vue";
+import { fa } from "vuetify/locale";
 
 export const useStore = defineStore("store", () => {
   console.log("v5.07.22:42")
@@ -139,6 +140,7 @@ export const useStore = defineStore("store", () => {
   const doors:TDoors=reactive({door2:`Battle`,door1:`Battle`,door3:`Battle`})
   const inventory:TInventory=reactive({items:reactive([]),cards:reactive([])})
   const list:Array<string>=reactive([`placeholder`])
+  const legit:Ref<boolean>=ref(true)
   const stats:TStats={
     health:ref(100),
     healthMax:ref(100),
@@ -14361,6 +14363,7 @@ export const useStore = defineStore("store", () => {
       currentScreen.value=`FreeRoom`
       currentRoom.value=`FreeRoom`
     }
+    legit.value=true
     stats.health.value=100
     stats.healthMax.value=100
     stats.healthRegen.value=5
@@ -14381,7 +14384,6 @@ export const useStore = defineStore("store", () => {
     godMode.value=false
     fullfillChest()
   }
-
   function getEffect():TCardsEffectsArray{
     const rnd=[1,1,1,1,1,1,1,1,1,2,2,2][Math.floor(Math.random()*12)]
       const value:TCardsEffectsArray=[]
@@ -14773,6 +14775,7 @@ export const useStore = defineStore("store", () => {
        doors.door3=`Battle`
     }
     if(currentWord.value===`/godmode`){
+      legit.value=false
       godMode.value=!godMode.value
       stats.healthMax.value=9999
       stats.health.value=9999

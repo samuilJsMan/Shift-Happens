@@ -35,7 +35,6 @@ const store = useStore();
 const display:DisplayInstance = useDisplay();
 provide(`display`, display);
 const images:TImages= import.meta.glob("/src/assets/icons/*", { eager: true });
-console.log(typeof Object.values(images)[0])
 provide(`images`, images);
 const i18n = useI18n();
 provide(`i18n`, i18n);

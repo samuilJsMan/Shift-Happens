@@ -3,6 +3,7 @@
     <div class="title">
       {{$t(`menues[10]`)}}
     </div>
+    <div class="button">{{$t(`menues[11]`)}}</div>
     <div class="button">{{$t(`menues[5]`)}}</div>
     <div class="button">{{$t(`menues[6]`)}}</div>
   </div>
