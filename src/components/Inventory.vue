@@ -37,8 +37,8 @@
     <div class="description">
       <div class="descriptionWrapper" v-for="i in Object.keys(description)" v-if="description&&currentSide===`items`">
         <div class="line" v-if="i ===`heal`||i ===`energy`||i ===`damage`"> {{ $t(`itemsCards.${i}`)+`: `+ description[i]}}</div>
-        <div class="line" v-else-if="i !==`effect`"> {{ $t(`itemsCards.${i}`)+`: `+ $t(`itemsCards.${description[i as keyof typeof description]}`)}}</div>
-        <div v-else class="block">
+          <div class="line" v-else-if="i !==`effect`"> {{ $t(`itemsCards.${i}`)+`: `+ $t(`itemsCards.${description[i as keyof typeof description]}`)}}</div>
+          <div v-else class="block">
           <div class="line">{{ $t(`itemsCards.${i}`)+`:` }}</div>
           <div class="line pl" v-for="effect in Object.keys(description[i] as {} )">
             <div v-if="effect===`type`" >{{ $t(`itemsCards.${effect}`)+`: `+$t(`itemsCards.${(description[i] as any)[effect]}`) }}</div>
@@ -47,8 +47,8 @@
         </div>
       </div>
       <div class="descriptionWrapper" v-for="i in Object.keys(description as {})" v-else>
-        <div class="line" v-if="i !==`effect`">{{ $t(`itemsCards.${i}`)+`: `+((description as {})[i as keyof typeof description] as string).toUpperCase() }}</div>
-        <div v-else class="block" v-for="effect in (description as {})[i as keyof typeof description]">
+        <div class="line" v-if="i !==`effect`">{{ $t(`itemsCards.${i}`)+`: `+((description as typeof description)[i as keyof typeof description] as string).toUpperCase() }}</div>
+        <div v-else class="block" v-for="effect in (description as typeof description)[i as keyof typeof description]">
           <div class="line">{{ $t(`itemsCards.${i}`)+`:` }}</div>
           <div class="line pl" v-for="item in  Object.keys(effect as {})">
             <div v-if="item===`type`" >{{ $t(`itemsCards.${item}`)+`: `+$t(`itemsCards.${(effect as any)[item]}`) }}</div>
@@ -95,10 +95,8 @@ onMounted(()=>{
 
 const description=computed(()=>{
   const item=inventory[currentSide.value as keyof typeof inventory][(page.value-1)*9+(select.value-1)]
-  if("amount" in item){
-    const {price, amount, ...duplicat}=Object.assign({},item)
-    return duplicat
-  }
+  const {price, amount, ...duplicat}=Object.assign({},item) as any
+  return duplicat
 })
 
 watch(currentWord,()=>{
